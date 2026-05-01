@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str
+    upload_chunk_size: int = 5 * 1024 * 1024  # 5mb
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

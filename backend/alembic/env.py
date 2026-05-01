@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.core.config import get_configs
 from app.database import Base
-from app.models import node, user
+from app.models import node, upload_session, user
 
 settings = get_configs()
 

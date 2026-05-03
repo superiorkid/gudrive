@@ -111,3 +111,7 @@ async def initialize_upload_service(
     return InitializeUploadResponse(
         upload_id=upload_id, chunk_size=config.upload_chunk_size
     )
+
+
+async def get_upload_status_service(upload_id: str):
+    pass

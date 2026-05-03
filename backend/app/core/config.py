@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     algorithm: str
     access_token_expire_minutes: int
     upload_tmp_dir: str
+    upload_final_dir: str
     upload_chunk_size: int = 5 * 1024 * 1024  # 5mb
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

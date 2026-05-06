@@ -218,11 +218,11 @@ const FileUploads = ({ children }: Props) => {
       onValueChange={setFiles}
       onUpload={onUpload}
       onFileReject={onFileReject}
-      maxFiles={2}
-      className="min-h-screen"
       multiple
     >
-      <FileUploadDropzone className="h-screen">{children}</FileUploadDropzone>
+      <FileUploadDropzone className="p-0 data-dragging:border-sky-400 data-dragging:bg-sky-100">
+        {children}
+      </FileUploadDropzone>
       <FileUploadList className="absolute right-2 bottom-2">
         {files.map((file, index) => {
           const key = `${file.name}-${file.size}`

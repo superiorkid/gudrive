@@ -1,4 +1,3 @@
-import AppContainer from "@/components/container"
 import axiosInstance from "@/lib/axios"
 import Link from "next/link"
 
@@ -7,11 +6,11 @@ const getNodes = async () => {
   return response.data
 }
 
-export default async function Page() {
+const DriveMyDrivePage = async () => {
   const nodes = await getNodes()
 
   return (
-    <AppContainer className="grid min-h-screen grid-cols-5 gap-4 space-y-12 px-5 py-8">
+    <div className="grid grid-cols-5 gap-4 space-y-12 px-5 py-8">
       {(nodes.data || []).map((node: any) => {
         const isFolder = node.type === "folder"
         return (
@@ -23,6 +22,8 @@ export default async function Page() {
           </Link>
         )
       })}
-    </AppContainer>
+    </div>
   )
 }
+
+export default DriveMyDrivePage

@@ -3,6 +3,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 import { Geist, Geist_Mono } from "next/font/google"
 
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { NuqsAdapter } from "nuqs/adapters/next"
 import "./globals.css"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
@@ -29,7 +31,11 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <NuqsAdapter>{children}</NuqsAdapter>
+          </TooltipProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>

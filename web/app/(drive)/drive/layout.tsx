@@ -1,17 +1,10 @@
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { SidebarProvider } from "@/components/ui/sidebar"
-import { ChevronDownIcon, SearchIcon } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 import React, { Suspense } from "react"
 import AppContext from "../_components/app-context"
 import { AppSidebar } from "../_components/app-sidebar"

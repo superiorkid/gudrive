@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_async_db_session, get_current_active_user
 from app.core.config import Settings, get_configs
 from app.models.user import User
-from app.schemas.upload import InitializeUploadRequest
+from app.schemas.upload import InitializeUploadRequest, InitializeUploadResponse
 from app.services.upload import (
     finalize_upload_service,
     get_upload_status_service,
@@ -26,7 +26,9 @@ async def initialize_upload(
     config: Annotated[Settings, Depends(get_configs)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    data = await initialize_upload_service(payload, db, config, current_user)
+    data: InitializeUploadResponse = await initialize_upload_service(
+        payload, db, config, current_user
+    )
     return success_response(data=data, message="Initialize upload successfully")
 
 

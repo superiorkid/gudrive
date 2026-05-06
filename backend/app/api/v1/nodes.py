@@ -28,7 +28,7 @@ async def create_node(
 ):
     name = payload.name.strip()
     if not name:
-        raise BadRequestException("message", details={})
+        raise BadRequestException("Folder name is required", details={})
 
     if payload.parent_id:
         query = select(Node).where(

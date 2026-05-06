@@ -20,7 +20,7 @@ const DriveLayout = ({ children }: Props) => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full">
+      <main className="grid min-h-screen w-full grid-rows-[auto_1fr]">
         <div className="px-8 py-4">
           <InputGroup className="h-10 max-w-md 2xl:max-w-xl">
             <InputGroupInput placeholder="Search in Drive" />

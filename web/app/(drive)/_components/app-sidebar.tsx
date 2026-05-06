@@ -4,11 +4,13 @@ import {
   ClockIcon,
   HardDriveIcon,
   HouseIcon,
+  PlusIcon,
   StarIcon,
   TrashIcon,
 } from "lucide-react"
 import * as React from "react"
 
+import NodeActionMenu from "@/app/_components/node-action-menu"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Sidebar,
@@ -16,6 +18,8 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -66,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <Link
-            href="/drive"
+            href="/drive/home"
             className={cn(
               buttonVariants({
                 size: "lg",
@@ -80,6 +84,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarMenu>
+          <SidebarMenuItem className="px-5">
+            <NodeActionMenu>
+              <SidebarMenuButton
+                className="h-10 justify-center"
+                variant="outline"
+              >
+                <PlusIcon /> New
+              </SidebarMenuButton>
+            </NodeActionMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>

@@ -61,7 +61,7 @@ const NodeTypeFilter = () => {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" className="w-auto min-w-52">
           {nodeTypes.map((node) => {
             const Icon = node.icon
             return (

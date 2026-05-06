@@ -220,7 +220,7 @@ const FileUploads = ({ children }: Props) => {
       onFileReject={onFileReject}
       multiple
     >
-      <FileUploadDropzone className="p-0 data-dragging:border-sky-400 data-dragging:bg-sky-100">
+      <FileUploadDropzone className="aspect-video bg-background p-0 data-dragging:border-sky-400 data-dragging:bg-sky-100">
         {children}
       </FileUploadDropzone>
       <FileUploadList className="absolute right-2 bottom-2">

@@ -137,16 +137,21 @@ const FileUploads = ({ children }: Props) => {
               control.status = "completed"
               onSuccess(file)
             } catch (error) {
-              // ignore abort error (pause)
-              if (
-                axios.isCancel(error) ||
-                (error as Error).name === "CanceledError"
-              ) {
-                return
-              }
+              // // ignore abort error (pause)
+              // if (
+              //   axios.isCancel(error) ||
+              //   (error as Error).name === "CanceledError"
+              // ) {
+              //   return
+              // }
+
+              const err = axios.isAxiosError(error)
+                ? new Error(error.response?.data.message || "Upload Failed")
+                : (error as Error)
 
               uploadsRef.current.get(key)!.status = "error"
-              onError(file, error as Error)
+              syncState(key, uploadsRef.current.get(key)!)
+              onError(file, err)
             }
           })
         )
@@ -214,7 +219,7 @@ const FileUploads = ({ children }: Props) => {
       onUpload={onUpload}
       onFileReject={onFileReject}
       maxFiles={2}
-      className="relative min-h-screen"
+      className="min-h-screen"
       multiple
     >
       <FileUploadDropzone className="h-screen">{children}</FileUploadDropzone>

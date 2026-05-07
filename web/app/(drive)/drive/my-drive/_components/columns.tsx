@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -13,7 +12,13 @@ import { getFileIcon } from "@/lib/folder-icon"
 import { formatBytes, formatDate } from "@/lib/utils"
 import { TNode } from "@/types/node-type"
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontalIcon } from "lucide-react"
+import {
+  DownloadIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  StarIcon,
+  TrashIcon,
+} from "lucide-react"
 
 export const columns: ColumnDef<TNode>[] = [
   {
@@ -58,9 +63,7 @@ export const columns: ColumnDef<TNode>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const payment = row.original
-
+    cell: () => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -69,16 +72,24 @@ export const columns: ColumnDef<TNode>[] = [
               <MoreHorizontalIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy payment ID
+          <DropdownMenuContent align="end" className="min-w-44">
+            <DropdownMenuItem>
+              <DownloadIcon className="mr-2" />
+              Download
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <PencilIcon className="mr-2" />
+              Rename
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
+            <DropdownMenuItem>
+              <StarIcon className="mr-2" />
+              Add to Starred
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <TrashIcon className="mr-2" />
+              Move to Trash
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )

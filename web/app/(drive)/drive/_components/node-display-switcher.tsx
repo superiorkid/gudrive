@@ -3,25 +3,28 @@
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Display, useDisplay } from "@/hooks/use-display"
-import { GridIcon, ListIcon } from "lucide-react"
+import { CheckIcon, GridIcon, ListIcon } from "lucide-react"
 
 const NodeDisplaySwitcher = () => {
   const [display, setDisplay] = useDisplay()
+  const isList = display === Display.list
 
   return (
     <ButtonGroup>
       <Button
         size="lg"
-        variant={display === Display.list ? "default" : "outline"}
+        variant={isList ? "default" : "outline"}
         onClick={() => setDisplay(Display.list)}
       >
+        {isList && <CheckIcon />}
         <ListIcon />
       </Button>
       <Button
         size="lg"
-        variant={display === Display.grid ? "default" : "outline"}
+        variant={!isList ? "default" : "outline"}
         onClick={() => setDisplay(Display.grid)}
       >
+        {!isList && <CheckIcon />}
         <GridIcon />
       </Button>
     </ButtonGroup>

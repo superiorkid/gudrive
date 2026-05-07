@@ -1,6 +1,5 @@
 import axiosInstance from "@/lib/axios"
-import { columns } from "./_components/columns"
-import { DataTable } from "./_components/data-table"
+import NodesDisplay from "../../_components/nodes-display"
 
 const getNodes = async () => {
   const response = await axiosInstance.get("/v1/nodes")
@@ -9,12 +8,7 @@ const getNodes = async () => {
 
 const DriveMyDrivePage = async () => {
   const nodes = await getNodes()
-
-  return (
-    <div>
-      <DataTable columns={columns} data={nodes.data} />
-    </div>
-  )
+  return <NodesDisplay data={nodes.data} />
 }
 
 export default DriveMyDrivePage

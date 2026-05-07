@@ -114,6 +114,7 @@ const FileUploads = ({ children }: Props) => {
                     parent_id: folderId,
                     filename: file.name,
                     total_size: file.size,
+                    mime_type: file.type,
                   }
                 )
                 const { upload_id, chunk_size } = initRes.data.data
@@ -213,7 +214,7 @@ const FileUploads = ({ children }: Props) => {
   }
 
   return (
-    <div className="relative w-full rounded-xl border">
+    <div className="relative w-full rounded-xl">
       <FileUpload
         value={files}
         onValueChange={setFiles}
@@ -223,8 +224,8 @@ const FileUploads = ({ children }: Props) => {
         multiple
       >
         <FileUploadDropzone
-          onClick={(event) => event.preventDefault()}
           className="aspect-video w-full border-none p-0 transition-colors hover:bg-background data-dragging:bg-sky-100"
+          onClick={(event) => event.preventDefault()}
         />
 
         <FileUploadList className="fixed right-6 bottom-6 z-100 w-80 rounded-lg border bg-background p-2 shadow-2xl">
@@ -282,7 +283,7 @@ const FileUploads = ({ children }: Props) => {
       </FileUpload>
 
       <div className="pointer-events-none relative z-10 w-full">
-        <div className="pointer-events-auto p-4">{children}</div>
+        <div className="pointer-events-auto">{children}</div>
       </div>
     </div>
   )

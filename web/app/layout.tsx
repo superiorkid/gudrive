@@ -31,6 +31,12 @@ export default function RootLayout({
       )}
     >
       <body>
+        {process.env.NODE_ENV === "development" && (
+          <script
+            src="https://unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+          />
+        )}
         <ThemeProvider>
           <TooltipProvider>
             <NuqsAdapter>{children}</NuqsAdapter>

@@ -4,13 +4,15 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { SidebarProvider } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { SearchIcon } from "lucide-react"
 import React, { Suspense } from "react"
-import AppContext from "../_components/app-context"
 import { AppSidebar } from "../_components/app-sidebar"
 import AppBreadcrumb from "./_components/app-breadcrumb"
 import NodeDisplaySwitcher from "./_components/node-display-switcher"
+import NodeSortFilter from "./_components/node-sort-filter"
 import NodeTypeFilter from "./_components/node-type-filter"
+import AppContext from "../_components/app-context"
 
 type Props = {
   children: React.ReactNode
@@ -45,10 +47,14 @@ const DriveLayout = ({ children }: Props) => {
           </div>
 
           <div className="space-y-3">
-            <div>
-              <NodeTypeFilter />
+            <div className="flex items-center space-x-2">
+              <Suspense fallback={<Skeleton />}>
+                <NodeTypeFilter />
+              </Suspense>
+              <Suspense fallback={<Skeleton />}>
+                <NodeSortFilter />
+              </Suspense>
             </div>
-
             <AppContext>{children}</AppContext>
           </div>
         </div>

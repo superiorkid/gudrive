@@ -2,6 +2,7 @@
 
 import {
   ClockIcon,
+  CommandIcon,
   HardDriveIcon,
   HouseIcon,
   PlusIcon,
@@ -21,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -65,39 +67,56 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar()
+  const isCollapsed = state === "collapsed"
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          <Link
-            href="/drive/home"
-            className={cn(
-              buttonVariants({
-                size: "lg",
-                className: "w-full justify-start",
-                variant: "ghost",
-              })
-            )}
-          >
-            Acme Inc.
-          </Link>
+          <SidebarMenuItem>
+            <Link
+              href="/drive/home"
+              className={cn(
+                buttonVariants({
+                  size: "lg",
+                  variant: "ghost",
+                }),
+                "w-full justify-start gap-2 px-2"
+              )}
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <CommandIcon className="size-4" />
+              </div>
+              {!isCollapsed && (
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Acme Inc.</span>
+                  <span className="truncate text-xs">Enterprise</span>
+                </div>
+              )}
+            </Link>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarMenu>
-          <SidebarMenuItem className="px-5">
+          <SidebarMenuItem className={cn(isCollapsed ? "px-2" : "px-5")}>
             <NodeActionMenu>
               <SidebarMenuButton
-                className="h-10 justify-center"
+                className="h-10 w-full"
                 variant="outline"
+                tooltip="New Item"
               >
-                <PlusIcon /> New
+                <PlusIcon className={cn(!isCollapsed && "mr-2")} />
+                {!isCollapsed && <span>New</span>}
               </SidebarMenuButton>
             </NodeActionMenu>
           </SidebarMenuItem>
         </SidebarMenu>
         <NavMain items={data.navMain} />
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>

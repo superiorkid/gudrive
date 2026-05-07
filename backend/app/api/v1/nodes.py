@@ -127,6 +127,7 @@ async def get_nodes(
             "size": node.size,
             "mime_type": node.mime_type,
             "created_at": node.created_at,
+            "updated_at": node.updated_at,
         }
         for node in nodes
     ]

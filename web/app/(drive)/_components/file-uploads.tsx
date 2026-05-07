@@ -213,58 +213,78 @@ const FileUploads = ({ children }: Props) => {
   }
 
   return (
-    <FileUpload
-      value={files}
-      onValueChange={setFiles}
-      onUpload={onUpload}
-      onFileReject={onFileReject}
-      multiple
-    >
-      <FileUploadDropzone className="aspect-video bg-background p-0 data-dragging:border-sky-400 data-dragging:bg-sky-100">
-        {children}
-      </FileUploadDropzone>
-      <FileUploadList className="absolute right-2 bottom-2">
-        {files.map((file, index) => {
-          const key = `${file.name}-${file.size}`
-          const control = uploadStates[key]
+    <div className="relative w-full rounded-xl border">
+      <FileUpload
+        value={files}
+        onValueChange={setFiles}
+        onUpload={onUpload}
+        onFileReject={onFileReject}
+        className="absolute inset-0 z-0"
+        multiple
+      >
+        <FileUploadDropzone
+          onClick={(event) => event.preventDefault()}
+          className="aspect-video w-full border-none p-0 transition-colors hover:bg-background data-dragging:bg-sky-100"
+        />
 
-          return (
-            <FileUploadItem key={index} value={file} className="flex-col">
-              <div className="flex w-full items-center gap-2">
-                <FileUploadItemPreview />
-                <FileUploadItemMetadata />
+        <FileUploadList className="fixed right-6 bottom-6 z-100 w-80 rounded-lg border bg-background p-2 shadow-2xl">
+          {files.map((file: any, index: number) => {
+            const key = `${file.name}-${file.size}`
+            const control = uploadStates[key]
 
-                <ButtonGroup>
-                  {control?.status === "uploading" && (
-                    <Button onClick={() => pauseUpload(file)} size="icon">
-                      <PauseIcon />
-                    </Button>
-                  )}
-                  {control?.status === "paused" && (
-                    <Button onClick={() => resumeUpload(file)} size="icon">
-                      <PlayIcon />
-                    </Button>
-                  )}
+            return (
+              <FileUploadItem
+                key={index}
+                value={file}
+                className="flex-col gap-2"
+              >
+                <div className="flex w-full items-center gap-2">
+                  <FileUploadItemPreview />
+                  <FileUploadItemMetadata />
+                  <ButtonGroup>
+                    {control?.status === "uploading" && (
+                      <Button
+                        onClick={() => pauseUpload(file)}
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                      >
+                        <PauseIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {(control?.status === "paused" ||
+                      control?.status === "error") && (
+                      <Button
+                        onClick={() => resumeUpload(file)}
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                      >
+                        <PlayIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <FileUploadItemDelete asChild>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    </FileUploadItemDelete>
+                  </ButtonGroup>
+                </div>
+                <FileUploadItemProgress />
+              </FileUploadItem>
+            )
+          })}
+        </FileUploadList>
+      </FileUpload>
 
-                  {control?.status === "error" && (
-                    <Button onClick={() => resumeUpload(file)} size="icon">
-                      <PlayIcon />
-                    </Button>
-                  )}
-
-                  <FileUploadItemDelete asChild>
-                    <Button size="icon" variant="destructive">
-                      <XIcon />
-                    </Button>
-                  </FileUploadItemDelete>
-                </ButtonGroup>
-              </div>
-              <FileUploadItemProgress />
-            </FileUploadItem>
-          )
-        })}
-      </FileUploadList>
-    </FileUpload>
+      <div className="pointer-events-none relative z-10 w-full">
+        <div className="pointer-events-auto p-4">{children}</div>
+      </div>
+    </div>
   )
 }
 

@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/axios"
-import NodesDisplay from "../../_components/nodes-display"
+import NodesDisplay from "../../../_components/nodes-display"
 
 const getNodes = async () => {
   const response = await axiosInstance.get("/v1/nodes")

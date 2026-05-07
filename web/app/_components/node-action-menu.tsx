@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { FilePlusIcon, FolderPlusIcon } from "lucide-react"
-import CreateFolderForm from "../(drive)/_components/create-folder-form"
+import CreateFolderForm from "../(dashboard)/_components/create-folder-form"
 
 type Props = {
   children: React.ReactNode

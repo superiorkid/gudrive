@@ -26,8 +26,8 @@ import {
   TrashIcon,
 } from "lucide-react"
 import Image from "next/image"
-import { columns } from "../drive/my-drive/_components/columns"
-import { DataTable } from "../drive/my-drive/_components/data-table"
+import { columns } from "../drive/(drive)/my-drive/_components/columns"
+import { DataTable } from "../drive/(drive)/my-drive/_components/data-table"
 import GridNodes from "./grid-nodes"
 
 type Props = {

@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useType } from "@/hooks/use-type"
@@ -21,9 +22,7 @@ import {
   Table2Icon,
   TypeIcon,
   VideoIcon,
-  XIcon,
 } from "lucide-react"
-
 const nodeTypes = [
   { label: "Folders", value: "folders", icon: FolderIcon },
   { label: "Documents", value: "documents", icon: FileTextIcon },
@@ -43,63 +42,59 @@ const NodeTypeFilter = () => {
   const ActiveIcon = activeType?.icon || null
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            size="lg"
-            variant={!!type ? "default" : "outline"}
-            className="capitalize"
-          >
-            {ActiveIcon ? (
-              <ActiveIcon className="mr-2 size-4" />
-            ) : (
-              <TypeIcon className="mr-2 size-4 opacity-50" />
-            )}
-            {activeType?.label || "Type"}
-            <ChevronDownIcon className="ml-2 size-4 opacity-50" />
-          </Button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="start" className="w-auto min-w-52">
-          {nodeTypes.map((node) => {
-            const Icon = node.icon
-            return (
-              <DropdownMenuItem
-                key={node.value}
-                onClick={() => setType(node.value)}
-                className={cn(
-                  "flex items-center gap-2",
-                  type === node.value && "bg-accent font-medium"
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "size-4",
-                    type === node.value
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  )}
-                />
-                <span>{node.label}</span>
-              </DropdownMenuItem>
-            )
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {type && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setType(null)}
-          className="h-10 px-2 text-muted-foreground hover:text-destructive"
+          size="lg"
+          variant={!!type ? "default" : "outline"}
+          className="capitalize"
         >
-          <XIcon className="mr-1 size-4" />
-          Clear
+          {ActiveIcon ? (
+            <ActiveIcon className="mr-2 size-4" />
+          ) : (
+            <TypeIcon className="mr-2 size-4 opacity-50" />
+          )}
+          {activeType?.label || "Type"}
+          <ChevronDownIcon className="ml-2 size-4 opacity-50" />
         </Button>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="start" className="w-auto min-w-52">
+        {nodeTypes.map((node) => {
+          const Icon = node.icon
+          return (
+            <DropdownMenuItem
+              key={node.value}
+              onClick={() => setType(node.value)}
+              className={cn(
+                "flex items-center gap-2",
+                type === node.value && "bg-accent font-medium"
+              )}
+            >
+              <Icon
+                className={cn(
+                  "size-4",
+                  type === node.value ? "text-primary" : "text-muted-foreground"
+                )}
+              />
+              <span>{node.label}</span>
+            </DropdownMenuItem>
+          )
+        })}
+
+        {type && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-red-500 focus:text-red-500"
+              onClick={() => setType(null)}
+            >
+              Clear Filter
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

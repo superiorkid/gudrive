@@ -5,7 +5,7 @@ type Props = {
 }
 
 const HomeLayout = ({ children }: Props) => {
-  return <div>{children}</div>
+  return <div className="min-h-screen w-full">{children}</div>
 }
 
 export default HomeLayout

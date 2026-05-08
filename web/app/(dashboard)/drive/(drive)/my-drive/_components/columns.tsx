@@ -19,7 +19,6 @@ import {
   StarIcon,
   TrashIcon,
 } from "lucide-react"
-
 export const columns: ColumnDef<TNode>[] = [
   {
     accessorKey: "name",
@@ -65,33 +64,35 @@ export const columns: ColumnDef<TNode>[] = [
     id: "actions",
     cell: () => {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-2 w-2 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-44">
-            <DropdownMenuItem>
-              <DownloadIcon className="mr-2" />
-              Download
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <PencilIcon className="mr-2" />
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <StarIcon className="mr-2" />
-              Add to Starred
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <TrashIcon className="mr-2" />
-              Move to Trash
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div onClick={(event) => event.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-2 w-2 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
+              <DropdownMenuItem>
+                <DownloadIcon className="mr-2" />
+                Download
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <PencilIcon className="mr-2" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <StarIcon className="mr-2" />
+                Add to Starred
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <TrashIcon className="mr-2" />
+                Move to Trash
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )
     },
   },

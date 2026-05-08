@@ -9,8 +9,7 @@ import React, { Suspense } from "react"
 import AppContext from "../../_components/app-context"
 import AppBreadcrumb from "../_components/app-breadcrumb"
 import NodeDisplaySwitcher from "../_components/node-display-switcher"
-import NodeSortFilter from "../_components/node-sort-filter"
-import NodeTypeFilter from "../_components/node-type-filter"
+import NodeFilters from "../_components/node-filters"
 
 type Props = {
   children: React.ReactNode
@@ -43,14 +42,17 @@ const DriveLayout = ({ children }: Props) => {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <Suspense fallback={<Skeleton />}>
-              <NodeTypeFilter />
-            </Suspense>
-            <Suspense fallback={<Skeleton />}>
-              <NodeSortFilter />
-            </Suspense>
-          </div>
+          <Suspense
+            fallback={
+              <div className="flex items-center space-x-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
+                ))}
+              </div>
+            }
+          >
+            <NodeFilters />
+          </Suspense>
           <AppContext>{children}</AppContext>
         </div>
       </div>

@@ -14,12 +14,9 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  RowSelectionState,
   useReactTable,
 } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
-
 interface DataTableProps<TData extends TNode, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -29,19 +26,11 @@ export function DataTable<TData extends TNode, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-
-  console.log("row selection", rowSelection)
-
   const router = useRouter()
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onRowSelectionChange: setRowSelection,
-    state: {
-      rowSelection,
-    },
   })
 
   const handleNodeNavigation = (node: TNode) => {
@@ -86,7 +75,6 @@ export function DataTable<TData extends TNode, TValue>({
                     ? "cursor-pointer"
                     : "cursor-default"
                 )}
-                onClick={row.getToggleSelectedHandler()}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
@@ -97,8 +85,12 @@ export function DataTable<TData extends TNode, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
+              <TableCell
+                colSpan={columns.length}
+                className="h-24 text-center text-base text-muted-foreground"
+              >
+                This folder is currently empty. Drag and drop files here to
+                upload them or use the &quot;New&quot; button to get started.
               </TableCell>
             </TableRow>
           )}

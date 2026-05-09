@@ -1,3 +1,4 @@
+import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 import axiosInstance from "@/lib/axios"
 
 type Props = {
@@ -13,11 +14,9 @@ const getNodes = async (parentId?: string) => {
 
 const FolderPage = async ({ params }: Props) => {
   const { folderId } = await params
-
   const nodes = await getNodes(folderId)
-  console.log(nodes.data.length ? "node tidak kosong" : "node kosong")
 
-  return <div>FolderPage {folderId}</div>
+  return <NodesDisplay data={nodes.data} />
 }
 
 export default FolderPage

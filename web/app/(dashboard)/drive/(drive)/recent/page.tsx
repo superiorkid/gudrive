@@ -1,7 +1,7 @@
-import React from "react"
+import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 
 const RecentPage = () => {
-  return <div>RecentPage</div>
+  return <NodesDisplay data={[]} />
 }
 
 export default RecentPage

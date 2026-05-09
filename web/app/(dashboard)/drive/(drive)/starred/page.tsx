@@ -1,5 +1,7 @@
+import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
+
 const StarredPage = () => {
-  return <div>StarredPage</div>
+  return <NodesDisplay data={[]} />
 }
 
 export default StarredPage

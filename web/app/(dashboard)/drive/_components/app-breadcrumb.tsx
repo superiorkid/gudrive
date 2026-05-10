@@ -9,7 +9,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useNode } from "@/hooks/queries/nodes/use-node"
+import { useNode } from "@/hooks/apis/nodes/use-node"
 import { formatLabel } from "@/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import Link from "next/link"

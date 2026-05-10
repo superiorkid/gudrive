@@ -1,7 +1,7 @@
 "use client"
 
 import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
-import { useNodes } from "@/hooks/queries/nodes/use-nodes"
+import { useNodes } from "@/hooks/apis/nodes/use-nodes"
 import { Suspense } from "react"
 
 type Props = {

@@ -13,6 +13,10 @@ import {
   FileUploadList,
   FileUploadProps,
 } from "@/components/ui/file-upload"
+import { useCompleteUpload } from "@/hooks/apis/uploads/use-complete-upload"
+import { useInitUpload } from "@/hooks/apis/uploads/use-init-upload"
+import { useUploadChunk } from "@/hooks/apis/uploads/use-upload-chunk"
+import { useUploadOffset } from "@/hooks/apis/uploads/use-upload-offset"
 import axiosInstance from "@/lib/axios"
 import axios from "axios"
 import { PauseIcon, PlayIcon, XIcon } from "lucide-react"
@@ -49,6 +53,11 @@ const FileUploads = ({ children }: Props) => {
     onError?: any
   }>({})
 
+  const { mutateAsync: initUpload } = useInitUpload()
+  const { mutateAsync: uploadChunk } = useUploadChunk()
+  const { mutateAsync: completeUpload } = useCompleteUpload()
+  const { mutateAsync: getOffset } = useUploadOffset()
+
   const syncState = (key: string, control: UploadControl) => {
     setUploadStates((prev) => ({
       ...prev,
@@ -76,23 +85,18 @@ const FileUploads = ({ children }: Props) => {
         control.offset + control.chunkSize
       )
 
-      const res = await axiosInstance.put(
-        `/v1/uploads/${control.uploadId}/chunks`,
+      const res = await uploadChunk({
         chunk,
-        {
-          signal: controller.signal,
-          headers: {
-            "Upload-Offset": String(control.offset),
-            "Content-Type": "application/octet-stream",
-          },
-        }
-      )
-      control.offset = res.data.data.offset
+        uploadId: control.uploadId!,
+        signal: controller.signal,
+        offset: control.offset,
+      })
+      control.offset = res?.data.offset || 0
       const progress = (control.offset / file.size) * 100
       onProgress(file, progress)
     }
 
-    await axiosInstance.post(`/v1/uploads/${control.uploadId}/complete`)
+    await completeUpload(control.uploadId!)
   }
 
   const onUpload: NonNullable<FileUploadProps["onUpload"]> = React.useCallback(
@@ -108,34 +112,29 @@ const FileUploads = ({ children }: Props) => {
 
               // init (only once)
               if (!control) {
-                const initRes = await axiosInstance.post(
-                  "/v1/uploads/initialize",
-                  {
-                    parent_id: folderId,
-                    filename: file.name,
-                    total_size: file.size,
-                    mime_type: file.type,
-                  }
-                )
-                const { upload_id, chunk_size } = initRes.data.data
+                const initRes = await initUpload({
+                  folderId,
+                  fileName: file.name,
+                  fileSize: file.size,
+                  mimeType: file.type,
+                })
 
                 control = {
                   offset: 0,
-                  uploadId: upload_id,
+                  uploadId: initRes?.data.upload_id,
                   status: "uploading",
-                  chunkSize: chunk_size,
+                  chunkSize: initRes?.data.chunk_size || 0,
                 }
                 uploadsRef.current.set(key, control)
                 syncState(key, control)
               }
 
-              const headRes = await axiosInstance.head(
-                `/v1/uploads/${control.uploadId}`
-              )
-              control.offset = Number(headRes.headers["upload-offset"] || 0)
+              const headRes = await getOffset(control.uploadId as string)
+              control.offset = Number(headRes?.headers["upload-offset"] || 0)
 
               await continueUpload(file, control, onProgress)
               control.status = "completed"
+              syncState(key, control)
               onSuccess(file)
             } catch (error) {
               // // ignore abort error (pause)

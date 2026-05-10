@@ -1,9 +1,10 @@
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/providers/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ReactQueryProvider } from "@/providers/react-query-provider"
 import { NuqsAdapter } from "nuqs/adapters/next"
 import "./globals.css"
 
@@ -37,11 +38,14 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        <ThemeProvider>
-          <TooltipProvider>
-            <NuqsAdapter>{children}</NuqsAdapter>
-          </TooltipProvider>
-        </ThemeProvider>
+        <ReactQueryProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </TooltipProvider>
+          </ThemeProvider>
+        </ReactQueryProvider>
+
         <Toaster />
       </body>
     </html>

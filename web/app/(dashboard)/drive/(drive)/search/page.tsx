@@ -1,7 +1,12 @@
-import React from "react"
+import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
+import { Suspense } from "react"
 
 const SearchPage = () => {
-  return <div>SearchPage</div>
+  return (
+    <Suspense>
+      <NodesDisplay data={[]} />
+    </Suspense>
+  )
 }
 
 export default SearchPage

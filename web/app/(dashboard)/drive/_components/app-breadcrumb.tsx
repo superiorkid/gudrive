@@ -1,3 +1,5 @@
+"use client"
+
 import NodeActionMenu from "@/app/_components/node-action-menu"
 import {
   Breadcrumb,
@@ -6,39 +8,60 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useNode } from "@/hooks/queries/nodes/use-node"
+import { formatLabel } from "@/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import React from "react"
+import { validate as uuidValidate } from "uuid"
 
-type Props = {
-  data: Array<{ href?: string; label: string }>
-}
+const AppBreadcrumb = () => {
+  const pathname = usePathname()
+  const pathSegments = pathname.split("/").filter((segment) => segment !== "")
 
-const AppBreadcrumb = ({ data }: Props) => {
+  const data = [
+    { label: "Home", href: "/", isUUID: false, segment: "" },
+    ...pathSegments.map((segment, index) => ({
+      segment: segment,
+      label: formatLabel(segment),
+      href: `/${pathSegments.slice(0, index + 1).join("/")}`,
+      isUUID: uuidValidate(segment),
+    })),
+  ]
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
         {data.map((item, index) => {
           const isLast = index === data.length - 1
 
+          const labelContent = item.isUUID ? (
+            <DynamicBreadcrumbLabel
+              segment={item.segment}
+              fallback={item.label}
+            />
+          ) : (
+            item.label
+          )
+
           return (
-            <React.Fragment key={index}>
+            <React.Fragment key={item.href}>
               <BreadcrumbItem>
                 {isLast ? (
                   <NodeActionMenu>
                     <button className="flex cursor-pointer items-center gap-1 text-foreground transition-colors outline-none hover:text-primary">
-                      {item.label}
+                      {labelContent}
                       <ChevronDownIcon className="size-3.5" />
                     </button>
                   </NodeActionMenu>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={item.href ?? "#"}>{item.label}</Link>
+                    <Link href={item.href}>{labelContent}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-
-              {/* Render separator only if it's NOT the last item */}
               {!isLast && <BreadcrumbSeparator />}
             </React.Fragment>
           )
@@ -46,6 +69,22 @@ const AppBreadcrumb = ({ data }: Props) => {
       </BreadcrumbList>
     </Breadcrumb>
   )
+}
+
+const DynamicBreadcrumbLabel = ({
+  segment,
+  fallback,
+}: {
+  segment: string
+  fallback: string
+}) => {
+  const { data, isPending } = useNode(segment)
+
+  if (isPending) {
+    return <Skeleton className="h-8 w-32" />
+  }
+
+  return <>{data?.data.name || fallback}</>
 }
 
 export default AppBreadcrumb

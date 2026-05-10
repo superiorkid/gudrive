@@ -17,6 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
+
 interface DataTableProps<TData extends TNode, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]

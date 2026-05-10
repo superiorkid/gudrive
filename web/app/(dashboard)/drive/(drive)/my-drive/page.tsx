@@ -1,14 +1,22 @@
-import axiosInstance from "@/lib/axios"
-import NodesDisplay from "../../../_components/nodes-display"
+import { getQueryClient } from "@/lib/query-client"
+import { nodeKeys } from "@/lib/query-keys"
+import { fetchNodes } from "@/services/node-service"
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
+import MyDrivePage from "./_components/my-drive-page"
 
-const getNodes = async () => {
-  const response = await axiosInstance.get("/v1/nodes")
-  return response.data
+const Page = async () => {
+  const queryClient = getQueryClient()
+
+  await queryClient.prefetchQuery({
+    queryKey: nodeKeys.list(),
+    queryFn: () => fetchNodes(),
+  })
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <MyDrivePage />
+    </HydrationBoundary>
+  )
 }
 
-const DriveMyDrivePage = async () => {
-  const nodes = await getNodes()
-  return <NodesDisplay data={nodes.data} />
-}
-
-export default DriveMyDrivePage
+export default Page

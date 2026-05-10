@@ -1,8 +1,8 @@
 import { parseAsStringEnum, useQueryState } from "nuqs"
 
 export enum Display {
-  list = "LIST",
-  grid = "GRID",
+  list = "list",
+  grid = "grid",
 }
 
 export function useDisplay() {

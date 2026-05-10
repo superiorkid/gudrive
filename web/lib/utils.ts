@@ -38,3 +38,7 @@ export function formatDate(dateString: string) {
     day: "numeric",
   }).format(date)
 }
+
+export const formatLabel = (segment: string) => {
+  return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+}

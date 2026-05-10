@@ -28,13 +28,7 @@ const DriveLayout = ({ children }: Props) => {
       </div>
       <div className="space-y-4 px-8 pt-4 pb-8">
         <div className="flex items-center justify-between">
-          <AppBreadcrumb
-            data={[
-              { label: "Home", href: "/" },
-              { label: "Components", href: "/components" },
-              { label: "My Drive" },
-            ]}
-          />
+          <AppBreadcrumb />
 
           <Suspense fallback={<div>Loading...</div>}>
             <NodeDisplaySwitcher />

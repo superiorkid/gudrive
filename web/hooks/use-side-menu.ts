@@ -22,7 +22,7 @@ export function useSideMenu() {
     return [
       {
         title: "Home",
-        url: `/drive/home?${searchParams.toString()}`,
+        url: `/drive/home`,
         icon: HouseIcon,
         isActive: pathname.includes("/drive/home"),
       },

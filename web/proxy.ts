@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 
 export default function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
 
   if (pathname === "/" || pathname === "/drive") {
     return NextResponse.redirect(new URL("/drive/home", request.url))
   }
 
   if (pathname === "/drive/folders") {
-    return NextResponse.redirect(new URL("/drive/my-drive", request.url))
+    const url = new URL("/drive/my-drive", request.url)
+
+    const display = searchParams.get("display")
+    if (display) {
+      url.searchParams.set("display", display)
+    }
+
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()

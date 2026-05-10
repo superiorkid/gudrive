@@ -1,6 +1,6 @@
-import { ThemeProvider } from "@/providers/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
+import { ThemeProvider } from "@/providers/theme-provider"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -46,7 +46,7 @@ export default function RootLayout({
           </ThemeProvider>
         </ReactQueryProvider>
 
-        <Toaster />
+        <Toaster richColors expand />
       </body>
     </html>
   )

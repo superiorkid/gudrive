@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNode } from "@/hooks/apis/nodes/use-node"
+import { useDisplay } from "@/hooks/use-display"
 import { formatLabel } from "@/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import Link from "next/link"
@@ -18,6 +19,9 @@ import React from "react"
 import { validate as uuidValidate } from "uuid"
 
 const AppBreadcrumb = () => {
+  const [display] = useDisplay()
+  const searchParams = new URLSearchParams({ display })
+
   const pathname = usePathname()
   const pathSegments = pathname.split("/").filter((segment) => segment !== "")
 
@@ -26,7 +30,7 @@ const AppBreadcrumb = () => {
     ...pathSegments.map((segment, index) => ({
       segment: segment,
       label: formatLabel(segment),
-      href: `/${pathSegments.slice(0, index + 1).join("/")}`,
+      href: `/${pathSegments.slice(0, index + 1).join("/")}?${searchParams.toString()}`,
       isUUID: uuidValidate(segment),
     })),
   ]

@@ -3,13 +3,17 @@
 import { Button } from "@/components/ui/button"
 import { Field, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import axiosInstance from "@/lib/axios"
+import { useCreateNode } from "@/hooks/apis/nodes/use-create-node"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { useParams } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { createFolderSchema, TCreateFolderSchema } from "../schema"
 
-const CreateFolderForm = () => {
+type Props = {
+  onSuccess?: () => void
+}
+
+const CreateFolderForm = ({ onSuccess }: Props) => {
   const { folderId } = useParams<{ folderId: string }>()
 
   const form = useForm<TCreateFolderSchema>({
@@ -20,11 +24,13 @@ const CreateFolderForm = () => {
     },
   })
 
+  const { mutate: createFolderMutation, isPending } = useCreateNode()
   const onSubmit = async (values: TCreateFolderSchema) => {
-    await axiosInstance.post("/v1/nodes", {
+    createFolderMutation({
       name: values.name,
-      parent_id: values.parentId ?? null,
+      parentId: values.parentId,
     })
+    onSuccess?.()
   }
 
   return (
@@ -32,6 +38,7 @@ const CreateFolderForm = () => {
       <Controller
         name="name"
         control={form.control}
+        disabled={isPending}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <Input
@@ -46,7 +53,9 @@ const CreateFolderForm = () => {
         )}
       />
       <div className="flex justify-end">
-        <Button type="submit">Create</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Creating..." : "Create"}
+        </Button>
       </div>
     </form>
   )

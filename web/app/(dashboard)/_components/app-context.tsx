@@ -33,9 +33,10 @@ enum Dialogs {
 
 const AppContext = ({ children }: Props) => {
   const [dialog, setDialog] = useState<Dialogs | null>(null)
+  const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   return (
-    <Dialog>
+    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
       <ContextMenu>
         <ContextMenuTrigger>
           <FileUploads>{children}</FileUploads>
@@ -62,7 +63,11 @@ const AppContext = ({ children }: Props) => {
               <DialogTitle>New Folder</DialogTitle>
             </DialogHeader>
             <div>
-              <CreateFolderForm />
+              <CreateFolderForm
+                onSuccess={() => {
+                  setOpenDialog(false)
+                }}
+              />
             </div>
           </>
         ) : (

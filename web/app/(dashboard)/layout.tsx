@@ -1,5 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar"
-import React from "react"
+import React, { Suspense } from "react"
 import { AppSidebar } from "./_components/app-sidebar"
 
 type Props = {
@@ -9,7 +9,9 @@ type Props = {
 const DashboardLayout = ({ children }: Props) => {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <Suspense>
+        <AppSidebar />
+      </Suspense>
       {children}
     </SidebarProvider>
   )

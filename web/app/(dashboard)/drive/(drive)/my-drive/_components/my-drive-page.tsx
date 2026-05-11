@@ -1,6 +1,7 @@
 "use client"
 
 import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useNodes } from "@/hooks/apis/nodes/use-nodes"
 import { Suspense } from "react"
 
@@ -16,7 +17,7 @@ const MyDrivePage = () => {
   }
 
   return (
-    <Suspense>
+    <Suspense fallback={<Skeleton className="h-8 w-36" />}>
       <NodesDisplay data={nodes?.data || []} />
     </Suspense>
   )

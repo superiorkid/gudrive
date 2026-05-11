@@ -6,7 +6,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useType } from "@/hooks/use-type"
@@ -25,6 +24,7 @@ import {
   VideoIcon,
   XIcon,
 } from "lucide-react"
+
 const nodeTypes = [
   { label: "Folders", value: "folders", icon: FolderIcon },
   { label: "Documents", value: "documents", icon: FileTextIcon },
@@ -82,18 +82,6 @@ const NodeTypeFilter = () => {
               </DropdownMenuItem>
             )
           })}
-
-          {type && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-500 focus:text-red-500"
-                onClick={() => setType(null)}
-              >
-                Clear Filter
-              </DropdownMenuItem>
-            </>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {type && (

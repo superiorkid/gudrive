@@ -2,14 +2,15 @@
 
 import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 import { useNodes } from "@/hooks/apis/nodes/use-nodes"
-import { Suspense } from "react"
+import { useType } from "@/hooks/use-type"
 
 type Props = {
   folderId: string
 }
 
 const DetailFolderPage = ({ folderId }: Props) => {
-  const { data: nodes, isPending } = useNodes(folderId)
+  const [type] = useType()
+  const { data: nodes, isPending } = useNodes({ parentId: folderId, type })
 
   if (isPending) {
     return (
@@ -19,11 +20,7 @@ const DetailFolderPage = ({ folderId }: Props) => {
     )
   }
 
-  return (
-    <Suspense>
-      <NodesDisplay data={nodes?.data ?? []} />
-    </Suspense>
-  )
+  return <NodesDisplay data={nodes?.data ?? []} />
 }
 
 export default DetailFolderPage

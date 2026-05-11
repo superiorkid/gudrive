@@ -111,18 +111,6 @@ export const NodeModifiedFilter = () => {
               </div>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-
-          {modified && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-500 focus:text-red-500"
-                onClick={() => setModified(null)}
-              >
-                Clear Filter
-              </DropdownMenuItem>
-            </>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {modified && (

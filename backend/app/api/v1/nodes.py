@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import asc, case, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_async_db_session, get_current_active_user
@@ -14,6 +14,7 @@ from app.common.exceptions import (
 from app.models.node import Node, NodeType
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
+from app.services.node import get_nodes_service
 from app.utils.is_descendant import is_descendant
 from app.utils.success_response import success_response
 
@@ -90,49 +91,12 @@ async def get_nodes(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     parent_id: Optional[uuid.UUID] = None,
+    type: Optional[str] = None,
 ):
-    if parent_id:
-        query = select(Node).where(
-            Node.id == parent_id,
-            Node.owner_id == current_user.id,
-            Node.deleted_at.is_(None),
-        )
-        result = await db.execute(query)
-        parent = result.scalar_one_or_none()
-        if not parent:
-            raise NotFoundException("Node", str(parent_id))
-
-        if parent.type != NodeType.FOLDER:
-            raise BadRequestException(
-                "Parent must be a folder", details={"parent_type": parent.type}
-            )
-
-    query = (
-        select(Node)
-        .where(
-            Node.owner_id == current_user.id,
-            Node.parent_id == parent_id,
-            Node.deleted_at.is_(None),
-        )
-        .order_by(case((Node.type == NodeType.FOLDER, 0), else_=1), asc(Node.name))
+    result = await get_nodes_service(
+        current_user=current_user, db=db, parent_id=parent_id, type=type
     )
-    result = await db.execute(query)
-    nodes = result.scalars().all()
-    data = [
-        {
-            "id": str(node.id),
-            "name": node.name,
-            "type": node.type.value,
-            "parent_id": node.parent_id,
-            "size": node.size,
-            "mime_type": node.mime_type,
-            "created_at": node.created_at,
-            "updated_at": node.updated_at,
-        }
-        for node in nodes
-    ]
-
-    return success_response(data=data)
+    return success_response(data=result)
 
 
 @nodes_router_v1.get("/{node_id}")

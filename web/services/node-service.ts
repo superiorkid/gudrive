@@ -21,7 +21,14 @@ export const fetchNodeDetail = async (id: string) => {
 }
 
 export const fetchNodes = async (
-  params: { parentId?: string; type?: string; modified?: string } = {}
+  params: {
+    parentId?: string
+    type?: string
+    modified?: string
+    folderGroup?: string
+    sortDirection?: string
+    sortBy?: string
+  } = { folderGroup: "top", sortDirection: "asc", sortBy: "name" }
 ) => {
   try {
     const response = await axiosInstance("/v1/nodes", {
@@ -29,6 +36,9 @@ export const fetchNodes = async (
         ...(params.parentId && { parent_id: params.parentId }),
         ...(params.type && { type: params.type }),
         ...(params.modified && { modified: params.modified }),
+        ...(params.folderGroup && { folder_group: params.folderGroup }),
+        ...(params.sortDirection && { sort_direction: params.sortDirection }),
+        ...(params.sortBy && { sort_by: params.sortBy }),
       },
     })
     return response.data as ApiResponse<TNode[]>

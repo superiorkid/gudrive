@@ -8,12 +8,24 @@ import DetailFolderPage from "./_components/detail-folder-page"
 
 type Props = {
   params: Promise<{ folderId: string }>
-  searchParams: Promise<{ type?: string; modified?: string }>
+  searchParams: Promise<{
+    type?: string
+    modified?: string
+    "folder-group"?: string
+    "sort-dir"?: string
+    "sort-by"?: string
+  }>
 }
 
 const FolderPage = async ({ params, searchParams }: Props) => {
   const { folderId } = await params
-  const { type, modified } = await searchParams
+  const {
+    type,
+    modified,
+    "folder-group": folderGroup,
+    "sort-dir": sortDirection,
+    "sort-by": sortBy,
+  } = await searchParams
   const queryClient = getQueryClient()
 
   await queryClient.prefetchQuery({
@@ -21,8 +33,19 @@ const FolderPage = async ({ params, searchParams }: Props) => {
       parentId: folderId,
       type: type ?? "",
       modified: modified ?? "",
+      folderGroup,
+      sortDirection,
+      sortBy,
     }),
-    queryFn: () => fetchNodes({ parentId: folderId, type, modified }),
+    queryFn: () =>
+      fetchNodes({
+        parentId: folderId,
+        type,
+        modified,
+        folderGroup,
+        sortDirection,
+        sortBy,
+      }),
   })
 
   return (

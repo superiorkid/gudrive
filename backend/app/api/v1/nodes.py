@@ -1,6 +1,7 @@
 import uuid
 from typing import Annotated, Optional
 
+from click import Option
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,14 +94,19 @@ async def get_nodes(
     parent_id: Optional[uuid.UUID] = None,
     type: Optional[str] = None,
     modified: Optional[str] = None,
+    sort_by: Optional[str] = "name",
+    sort_direction: Optional[str] = "asc",
+    folder_group: Optional[str] = "top",
 ):
-    print("modified", modified)
     result = await get_nodes_service(
         current_user=current_user,
         db=db,
         parent_id=parent_id,
         type=type,
         modified=modified,
+        sort_by=sort_by,
+        sort_direction=sort_direction,
+        folder_group=folder_group,
     )
     return success_response(data=result)
 

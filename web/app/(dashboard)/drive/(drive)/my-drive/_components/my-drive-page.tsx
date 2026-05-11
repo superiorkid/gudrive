@@ -1,10 +1,8 @@
 "use client"
 
 import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useNodes } from "@/hooks/apis/nodes/use-nodes"
 import { useType } from "@/hooks/use-type"
-import { Suspense } from "react"
 
 const MyDrivePage = () => {
   const [type] = useType()

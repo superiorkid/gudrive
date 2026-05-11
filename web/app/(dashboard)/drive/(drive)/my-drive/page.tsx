@@ -15,7 +15,7 @@ const Page = async ({ searchParams }: Props) => {
   const queryClient = getQueryClient()
 
   await queryClient.prefetchQuery({
-    queryKey: nodeKeys.list({ type }),
+    queryKey: nodeKeys.list({ type: type ?? "" }),
     queryFn: () => fetchNodes({ type }),
   })
 

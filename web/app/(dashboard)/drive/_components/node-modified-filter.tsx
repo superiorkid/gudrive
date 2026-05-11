@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Calendar } from "@/components/ui/calendar"
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ import {
   ClockIcon,
   HistoryIcon,
   Settings2Icon,
+  XIcon,
 } from "lucide-react"
 import { useState } from "react"
 import { DateRange } from "react-day-picker"
@@ -47,81 +49,92 @@ export const NodeModifiedFilter = () => {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant={modified ? "default" : "outline"} className="h-9">
-          <CalendarRangeIcon className="mr-2 size-4" />
-          <span className="max-w-25 truncate">
-            {modified ? modified.replace(/~/g, " to ") : "Modified"}
-          </span>
-          <ChevronDownIcon className="ml-2 size-4 opacity-50" />
-        </Button>
-      </DropdownMenuTrigger>
+    <ButtonGroup>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="lg">
+            <CalendarRangeIcon className="mr-2 size-4" />
+            <span className="max-w-25 truncate">
+              {modified ? modified.replace(/~/g, " to ") : "Modified"}
+            </span>
+            <ChevronDownIcon className="ml-2 size-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="w-56" align="start">
-        <DropdownMenuItem onClick={() => handleSelectPreset("today")}>
-          <ClockIcon className="mr-2 size-4 text-muted-foreground" />
-          Today
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleSelectPreset("last-7-days")}>
-          <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
-          Last 7 days
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleSelectPreset("last-30-days")}>
-          <HistoryIcon className="mr-2 size-4 text-muted-foreground" />
-          Last 30 days
-        </DropdownMenuItem>
+        <DropdownMenuContent className="w-56" align="start">
+          <DropdownMenuItem onClick={() => handleSelectPreset("today")}>
+            <ClockIcon className="mr-2 size-4 text-muted-foreground" />
+            Today
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSelectPreset("last-7-days")}>
+            <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
+            Last 7 days
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSelectPreset("last-30-days")}>
+            <HistoryIcon className="mr-2 size-4 text-muted-foreground" />
+            Last 30 days
+          </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+          <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={() => handleSelectPreset("2026")}>
-          <CalendarDaysIcon className="mr-2 size-4 text-muted-foreground" />
-          This Year (2026)
-        </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSelectPreset("2026")}>
+            <CalendarDaysIcon className="mr-2 size-4 text-muted-foreground" />
+            This Year (2026)
+          </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+          <DropdownMenuSeparator />
 
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Settings2Icon className="mr-2 size-4 text-muted-foreground" />
-            <span>Custom date</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="p-0">
-            <div className="flex flex-col">
-              <Calendar
-                mode="range"
-                selected={range}
-                onSelect={setRange}
-                numberOfMonths={1}
-                defaultMonth={new Date(2026, 4)}
-              />
-              <div className="border-t p-2">
-                <Button
-                  size="sm"
-                  className="w-full"
-                  disabled={!range?.from}
-                  onClick={applyCustomRange}
-                >
-                  Apply {range?.to ? "Range" : "Date"}
-                </Button>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Settings2Icon className="mr-2 size-4 text-muted-foreground" />
+              <span>Custom date</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="p-0">
+              <div className="flex flex-col">
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={setRange}
+                  numberOfMonths={1}
+                  defaultMonth={new Date(2026, 4)}
+                />
+                <div className="border-t p-2">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    disabled={!range?.from}
+                    onClick={applyCustomRange}
+                  >
+                    Apply {range?.to ? "Range" : "Date"}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
 
-        {modified && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-red-500 focus:text-red-500"
-              onClick={() => setModified(null)}
-            >
-              Clear Filter
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {modified && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500"
+                onClick={() => setModified(null)}
+              >
+                Clear Filter
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {modified && (
+        <Button
+          variant="destructive"
+          size="lg"
+          onClick={() => setModified(null)}
+        >
+          <XIcon className="size-4" />
+        </Button>
+      )}
+    </ButtonGroup>
   )
 }
 

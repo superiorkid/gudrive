@@ -1,12 +1,12 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { useModified } from "@/hooks/use-modified"
 import { useType } from "@/hooks/use-type"
-import { XIcon } from "lucide-react"
 import NodeModifiedFilter from "./node-modified-filter"
 import NodeSortFilter from "./node-sort-filter"
 import NodeTypeFilter from "./node-type-filter"
+import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const NodeFilters = () => {
   const [type, setType] = useType()
@@ -24,21 +24,19 @@ const NodeFilters = () => {
 
   return (
     <div className="flex items-center space-x-2">
-      <NodeTypeFilter />
-      <NodeModifiedFilter />
-      <NodeSortFilter />
-
-      {(!!modified || !!type) && (
-        <Button
-          variant="destructive"
-          size="lg"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={clearAllFilter}
-        >
-          <XIcon className="mr-1" />
-          Clear all filters
-        </Button>
-      )}
+      <Suspense
+        fallback={
+          <div className="flex items-center space-x-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
+            ))}
+          </div>
+        }
+      >
+        <NodeTypeFilter />
+        <NodeModifiedFilter />
+        <NodeSortFilter />
+      </Suspense>
     </div>
   )
 }

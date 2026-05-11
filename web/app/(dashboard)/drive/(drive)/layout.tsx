@@ -36,17 +36,8 @@ const DriveLayout = ({ children }: Props) => {
         </div>
 
         <div className="space-y-3">
-          <Suspense
-            fallback={
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
-                ))}
-              </div>
-            }
-          >
-            <NodeFilters />
-          </Suspense>
+          <NodeFilters />
+
           <AppContext>{children}</AppContext>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
   Table2Icon,
   TypeIcon,
   VideoIcon,
+  XIcon,
 } from "lucide-react"
 const nodeTypes = [
   { label: "Folders", value: "folders", icon: FolderIcon },
@@ -42,59 +44,64 @@ const NodeTypeFilter = () => {
   const ActiveIcon = activeType?.icon || null
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          size="lg"
-          variant={!!type ? "default" : "outline"}
-          className="capitalize"
-        >
-          {ActiveIcon ? (
-            <ActiveIcon className="mr-2 size-4" />
-          ) : (
-            <TypeIcon className="mr-2 size-4 opacity-50" />
-          )}
-          {activeType?.label || "Type"}
-          <ChevronDownIcon className="ml-2 size-4 opacity-50" />
-        </Button>
-      </DropdownMenuTrigger>
+    <ButtonGroup>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="lg" variant="outline" className="capitalize">
+            {ActiveIcon ? (
+              <ActiveIcon className="mr-2 size-4" />
+            ) : (
+              <TypeIcon className="mr-2 size-4 opacity-50" />
+            )}
+            {activeType?.label || "Type"}
+            <ChevronDownIcon className="ml-2 size-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="w-auto min-w-52">
-        {nodeTypes.map((node) => {
-          const Icon = node.icon
-          return (
-            <DropdownMenuItem
-              key={node.value}
-              onClick={() => setType(node.value)}
-              className={cn(
-                "flex items-center gap-2",
-                type === node.value && "bg-accent font-medium"
-              )}
-            >
-              <Icon
+        <DropdownMenuContent align="start" className="w-auto min-w-52">
+          {nodeTypes.map((node) => {
+            const Icon = node.icon
+            return (
+              <DropdownMenuItem
+                key={node.value}
+                onClick={() => setType(node.value)}
                 className={cn(
-                  "size-4",
-                  type === node.value ? "text-primary" : "text-muted-foreground"
+                  "flex items-center gap-2",
+                  type === node.value && "bg-accent font-medium"
                 )}
-              />
-              <span>{node.label}</span>
-            </DropdownMenuItem>
-          )
-        })}
+              >
+                <Icon
+                  className={cn(
+                    "size-4",
+                    type === node.value
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )}
+                />
+                <span>{node.label}</span>
+              </DropdownMenuItem>
+            )
+          })}
 
-        {type && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-red-500 focus:text-red-500"
-              onClick={() => setType(null)}
-            >
-              Clear Filter
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {type && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500"
+                onClick={() => setType(null)}
+              >
+                Clear Filter
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {type && (
+        <Button variant="destructive" size="lg" onClick={() => setType(null)}>
+          <XIcon className="size-4" />
+        </Button>
+      )}
+    </ButtonGroup>
   )
 }
 

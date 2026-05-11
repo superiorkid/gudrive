@@ -92,9 +92,15 @@ async def get_nodes(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     parent_id: Optional[uuid.UUID] = None,
     type: Optional[str] = None,
+    modified: Optional[str] = None,
 ):
+    print("modified", modified)
     result = await get_nodes_service(
-        current_user=current_user, db=db, parent_id=parent_id, type=type
+        current_user=current_user,
+        db=db,
+        parent_id=parent_id,
+        type=type,
+        modified=modified,
     )
     return success_response(data=result)
 

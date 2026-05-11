@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import asc, case, or_, select
+from sqlalchemy import asc, case, modifier, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exceptions import BadRequestException, NotFoundException
@@ -56,11 +57,49 @@ def apply_file_filter(query, type: str):
     return query
 
 
+def apply_modified_filter(query, modified: str):
+    now = datetime.now(timezone.utc)
+
+    if modified == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+        return query.where(Node.updated_at >= start, Node.updated_at < end)
+
+    if modified == "last-7-days":
+        start = now - timedelta(days=7)
+        return query.where(Node.updated_at >= start)
+
+    if modified == "last-30-days":
+        start = now - timedelta(days=30)
+        return query.where(Node.updated_at >= start)
+
+    if modified.isdigit() and len(modified) == 4:
+        year = int(modified)
+        start = datetime(year, 1, 1, tzinfo=timezone.utc)
+        end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        return query.where(Node.updated_at >= start, Node.updated_at < end)
+
+    if "~" in modified:
+        from_str, to_str = modified.split("~")
+        start = datetime.fromisoformat(from_str).replace(tzinfo=timezone.utc)
+
+        if to_str:
+            end = datetime.fromisoformat(to_str).replace(
+                tzinfo=timezone.utc
+            ) + timedelta(days=1)
+            return query.where(Node.updated_at >= start, Node.updated_at < end)
+
+        return query.where(Node.updated_at >= start)
+
+    return query
+
+
 async def get_nodes_service(
     db: AsyncSession,
     current_user: User,
     parent_id: Optional[uuid.UUID],
     type: Optional[str],
+    modified: Optional[str],
 ):
     if parent_id:
         query = select(Node).where(
@@ -86,6 +125,9 @@ async def get_nodes_service(
 
     if type:
         query = apply_file_filter(query=query, type=type)
+
+    if modified:
+        query = apply_modified_filter(query=query, modified=modified)
 
     query = query.order_by(
         case((Node.type == NodeType.FOLDER, 0), else_=1), asc(Node.name)

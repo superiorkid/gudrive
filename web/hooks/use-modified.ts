@@ -1,8 +1,16 @@
+import { usePathname } from "next/navigation"
 import { parseAsString, useQueryState } from "nuqs"
+import { useEffect } from "react"
 
 export function useModified() {
-  return useQueryState(
+  const [modified, setModified] = useQueryState(
     "modified",
-    parseAsString.withDefault("").withOptions({ shallow: false })
+    parseAsString.withDefault("")
   )
+  const pathname = usePathname()
+  useEffect(() => {
+    setModified(null)
+  }, [pathname])
+
+  return [modified, setModified] as const
 }

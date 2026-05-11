@@ -21,13 +21,14 @@ export const fetchNodeDetail = async (id: string) => {
 }
 
 export const fetchNodes = async (
-  params: { parentId?: string; type?: string } = {}
+  params: { parentId?: string; type?: string; modified?: string } = {}
 ) => {
   try {
     const response = await axiosInstance("/v1/nodes", {
       params: {
         ...(params.parentId && { parent_id: params.parentId }),
         ...(params.type && { type: params.type }),
+        ...(params.modified && { modified: params.modified }),
       },
     })
     return response.data as ApiResponse<TNode[]>

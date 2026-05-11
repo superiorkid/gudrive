@@ -7,16 +7,16 @@ import { Suspense } from "react"
 import MyDrivePage from "./_components/my-drive-page"
 
 type Props = {
-  searchParams: Promise<{ type?: string }>
+  searchParams: Promise<{ type?: string; modified?: string }>
 }
 
 const Page = async ({ searchParams }: Props) => {
-  const { type } = await searchParams
+  const { type, modified } = await searchParams
   const queryClient = getQueryClient()
 
   await queryClient.prefetchQuery({
-    queryKey: nodeKeys.list({ type: type ?? "" }),
-    queryFn: () => fetchNodes({ type }),
+    queryKey: nodeKeys.list({ type: type ?? "", modified: modified ?? "" }),
+    queryFn: () => fetchNodes({ type, modified }),
   })
 
   return (

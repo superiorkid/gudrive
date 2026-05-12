@@ -3,6 +3,7 @@ import { getQueryClient } from "@/lib/query-client"
 import { nodeKeys } from "@/lib/query-keys"
 import { fetchNodes } from "@/services/node-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
+import { headers } from "next/headers"
 import { Suspense } from "react"
 import TrashPage from "./_components/trash-page"
 
@@ -15,14 +16,19 @@ type Props = {
   }>
 }
 
+// TODO: make a folder clickable. it should display child/deleted items
+
 const Page = async ({ searchParams }: Props) => {
+  const [params, headerList] = await Promise.all([searchParams, headers()])
+
   const {
     type,
     modified,
     "sort-dir": sortDirection,
     "sort-by": sortBy,
-  } = await searchParams
+  } = params
 
+  const fullUrl = headerList.get("x-url")
   const queryClient = getQueryClient()
 
   await queryClient.prefetchQuery({
@@ -38,7 +44,7 @@ const Page = async ({ searchParams }: Props) => {
         type,
         modified,
         sortDirection,
-        sortBy,
+        sortBy: fullUrl?.includes("trash") ? "date-trashed" : "name",
         status: "trashed",
       }),
   })

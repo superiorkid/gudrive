@@ -3,7 +3,6 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.base import Options
 
 from app.api.deps import get_async_db_session, get_current_active_user
 from app.models.user import User

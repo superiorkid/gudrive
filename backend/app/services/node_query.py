@@ -91,7 +91,9 @@ def apply_modified_filter(query, modified: str):
 
 
 def normalize_sort(sort_by: str, sort_direction: str, folder_group: str):
-    sort_by = sort_by if sort_by in {"name", "date-modified"} else "name"
+    sort_by = (
+        sort_by if sort_by in {"name", "date-modified", "date-trashed"} else "name"
+    )
     sort_direction = sort_direction if sort_direction in {"asc", "desc"} else "asc"
     folder_group = folder_group if folder_group in {"top", "mixed"} else "top"
 
@@ -99,14 +101,24 @@ def normalize_sort(sort_by: str, sort_direction: str, folder_group: str):
 
 
 def apply_sort(
-    query, sort_by: str, sort_direction: str, folder_group: str, type: Optional[str]
+    query,
+    sort_by: str,
+    sort_direction: str,
+    folder_group: str,
+    type: Optional[str],
+    status: Optional[str],
 ):
     direction = asc if sort_direction == "asc" else desc
+
+    if status == "trashed":
+        folder_group = "mixed"
 
     if sort_by == "name":
         primary_sort = direction(Node.name)
     elif sort_by == "date-modified":
         primary_sort = direction(Node.updated_at)
+    elif sort_by == "date-trashed":
+        primary_sort = direction(Node.deleted_at)
     else:
         primary_sort = asc(Node.name)
 

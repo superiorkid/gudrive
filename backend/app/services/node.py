@@ -140,7 +140,7 @@ async def get_nodes_service(
         folder_group=folder_group if folder_group else "",
     )
 
-    query = apply_sort(query, sort_by, sort_direction, folder_group, type)
+    query = apply_sort(query, sort_by, sort_direction, folder_group, type, status)
 
     result = await db.execute(query)
     nodes = result.scalars().all()

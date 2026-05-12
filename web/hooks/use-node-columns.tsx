@@ -38,7 +38,7 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
           const { name, type, mime_type } = row.original
           return (
             <div className="flex items-center gap-3">
-              <div className="h-5 w-5 shrink-0">
+              <div className="size-5 shrink-0">
                 {getFileIcon(type, mime_type || "")}
               </div>
               <span className="max-w-50 truncate font-medium">{name}</span>
@@ -119,11 +119,20 @@ function ActionRow({
   const { mutate: softDeleteMutation, isPending } = useSoftDeleteNode()
 
   return (
-    <div onClick={(event) => event.stopPropagation()}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.stopPropagation()
+        }
+      }}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <MoreHorizontalIcon className="h-4 w-4" />
+          <Button variant="ghost" className="size-8 p-0" disabled={isPending}>
+            <MoreHorizontalIcon className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-44">
@@ -152,6 +161,7 @@ function ActionRow({
               <DropdownMenuItem
                 className="text-destructive"
                 onClick={() => softDeleteMutation(nodeId)}
+                disabled={isPending}
               >
                 <TrashIcon className="mr-2 size-4" /> Move to Trash
               </DropdownMenuItem>

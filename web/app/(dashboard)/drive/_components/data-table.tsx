@@ -17,6 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { usePathname, useRouter } from "next/navigation"
+import NoItemsView from "../../_components/no-items-view"
 
 interface DataTableProps<TData extends TNode, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -92,8 +93,7 @@ export function DataTable<TData extends TNode, TValue>({
                 colSpan={columns.length}
                 className="h-24 text-center text-base text-muted-foreground"
               >
-                This folder is currently empty. Drag and drop files here to
-                upload them or use the &quot;New&quot; button to get started.
+                <NoItemsView />
               </TableCell>
             </TableRow>
           )}

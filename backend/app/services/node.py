@@ -363,5 +363,10 @@ async def restore_node_service(
     descendants_cte = descendants_cte.union_all(
         select(Node.id).where(Node.parent_id == descendants_alias.c.id)
     )
-    await db.execute(select(Node.id).where(Node.id.in_(select(descendants_cte.c.id))))
+
+    await db.execute(
+        update(Node)
+        .where(Node.id.in_(select(descendants_cte.c.id)))
+        .values(deleted_at=None)
+    )
     await db.commit()

@@ -107,3 +107,20 @@ export const deleteNode = async (nodeId: string) => {
     }
   }
 }
+
+export const restoreNode = async (nodeId: string) => {
+  try {
+    const response = await axiosInstance.post(`/v1/nodes/${nodeId}/restore`)
+    return response.data as ApiResponse<{ ok: boolean }>
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+      console.error("API Error Status:", axiosError.response?.status)
+      console.error("Server Data:", axiosError.response?.data)
+    } else if (error instanceof Error) {
+      console.error("Native Erro:", error.message)
+    } else {
+      console.error("Unexpected Error:", error)
+    }
+  }
+}

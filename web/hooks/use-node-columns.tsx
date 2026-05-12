@@ -1,26 +1,14 @@
 "use client"
 
+import NodeActionDropdown from "@/app/(dashboard)/_components/node-action-dropdown"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { getFileIcon } from "@/lib/folder-icon"
 import { formatBytes, formatDate } from "@/lib/utils"
 import { TNode } from "@/types/node-type"
 import { ColumnDef } from "@tanstack/react-table"
-import {
-  DownloadIcon,
-  HardDriveIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  StarIcon,
-  TrashIcon,
-} from "lucide-react"
+import { HardDriveIcon, MoreHorizontalIcon } from "lucide-react"
 import { useMemo } from "react"
+import { useRestoreNode } from "./apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "./apis/nodes/use-soft-delete-node"
 import { useSortBy } from "./use-sort-by"
 
@@ -116,7 +104,10 @@ function ActionRow({
   nodeId: string
   variant: TableVariant
 }) {
-  const { mutate: softDeleteMutation, isPending } = useSoftDeleteNode()
+  const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
+    useSoftDeleteNode()
+  const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
+    useRestoreNode()
 
   return (
     <div
@@ -129,46 +120,22 @@ function ActionRow({
         }
       }}
     >
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="size-8 p-0" disabled={isPending}>
-            <MoreHorizontalIcon className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-44">
-          {variant === "trash" ? (
-            <>
-              <DropdownMenuItem onClick={() => console.log("Restore", nodeId)}>
-                Restore Item
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                Delete Permanently
-              </DropdownMenuItem>
-            </>
-          ) : (
-            <>
-              <DropdownMenuItem>
-                <DownloadIcon className="mr-2 size-4" /> Download
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <PencilIcon className="mr-2 size-4" /> Rename
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <StarIcon className="mr-2 size-4" /> Add to Starred
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => softDeleteMutation(nodeId)}
-                disabled={isPending}
-              >
-                <TrashIcon className="mr-2 size-4" /> Move to Trash
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <NodeActionDropdown
+        nodeId={nodeId}
+        isTrashPage={variant === "trash"}
+        restoreNodeMutation={restoreNodeMutation}
+        restoreNodePending={restoreNodePending}
+        softDeleteMutation={softDeleteMutation}
+        softDeleteNodePending={pendingSoftDelete}
+      >
+        <Button
+          variant="ghost"
+          className="size-8 p-0"
+          disabled={pendingSoftDelete || restoreNodePending}
+        >
+          <MoreHorizontalIcon className="size-4" />
+        </Button>
+      </NodeActionDropdown>
     </div>
   )
 }

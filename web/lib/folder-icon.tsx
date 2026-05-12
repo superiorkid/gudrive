@@ -18,7 +18,7 @@ export const getFileIcon = (type: "file" | "folder", mimeType: string) => {
   if (mimeType.includes("audio")) return <MusicIcon className="text-pink-500" />
   if (mimeType.includes("pdf"))
     return <FileTextIcon className="text-orange-500" />
-  if (mimeType.includes("text")) return <TypeIcon className="text-gray-500" />
+  if (mimeType.includes("text")) return <TypeIcon className="text-zinc-500" />
 
-  return <FileIcon className="text-gray-400" /> // Default icon
+  return <FileIcon className="text-zinc-400" /> // Default icon
 }

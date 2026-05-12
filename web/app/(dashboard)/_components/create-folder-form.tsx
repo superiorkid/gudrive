@@ -46,7 +46,6 @@ const CreateFolderForm = ({ onSuccess }: Props) => {
               id={field.name}
               aria-invalid={fieldState.invalid}
               placeholder="Folder Name"
-              autoFocus
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>

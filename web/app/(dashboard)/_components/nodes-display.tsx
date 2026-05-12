@@ -11,7 +11,7 @@ type Props = {
   columns: ColumnDef<TNode>[]
 }
 
-export const NodesDisplay = ({ data, columns }: Props) => {
+const NodesDisplay = ({ data, columns }: Props) => {
   const [display] = useDisplay()
 
   return (

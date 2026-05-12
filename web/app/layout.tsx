@@ -36,6 +36,7 @@ export default function RootLayout({
           <script
             src="https://unpkg.com/react-scan/dist/auto.global.js"
             crossOrigin="anonymous"
+            defer
           />
         )}
         <ReactQueryProvider>

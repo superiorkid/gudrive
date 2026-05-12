@@ -18,14 +18,17 @@ type Props = {
 }
 
 const FolderPage = async ({ params, searchParams }: Props) => {
-  const { folderId } = await params
-  const {
-    type,
-    modified,
-    "folder-group": folderGroup,
-    "sort-dir": sortDirection,
-    "sort-by": sortBy,
-  } = await searchParams
+  const [
+    { folderId },
+    {
+      type,
+      modified,
+      "folder-group": folderGroup,
+      "sort-dir": sortDirection,
+      "sort-by": sortBy,
+    },
+  ] = await Promise.all([params, searchParams])
+
   const queryClient = getQueryClient()
 
   await queryClient.prefetchQuery({

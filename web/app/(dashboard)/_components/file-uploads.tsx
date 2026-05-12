@@ -228,16 +228,12 @@ const FileUploads = ({ children }: Props) => {
         />
 
         <FileUploadList className="fixed right-6 bottom-6 z-100 w-80 rounded-lg border bg-background p-2 shadow-2xl">
-          {files.map((file: any, index: number) => {
+          {files.map((file: any) => {
             const key = `${file.name}-${file.size}`
             const control = uploadStates[key]
 
             return (
-              <FileUploadItem
-                key={index}
-                value={file}
-                className="flex-col gap-2"
-              >
+              <FileUploadItem key={key} value={file} className="flex-col gap-2">
                 <div className="flex w-full items-center gap-2">
                   <FileUploadItemPreview />
                   <FileUploadItemMetadata />
@@ -247,9 +243,9 @@ const FileUploads = ({ children }: Props) => {
                         onClick={() => pauseUpload(file)}
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8"
+                        className="size-8"
                       >
-                        <PauseIcon className="h-4 w-4" />
+                        <PauseIcon className="size-4" />
                       </Button>
                     )}
                     {(control?.status === "paused" ||
@@ -258,18 +254,18 @@ const FileUploads = ({ children }: Props) => {
                         onClick={() => resumeUpload(file)}
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8"
+                        className="size-8"
                       >
-                        <PlayIcon className="h-4 w-4" />
+                        <PlayIcon className="size-4" />
                       </Button>
                     )}
                     <FileUploadItemDelete asChild>
                       <Button
                         size="icon"
                         variant="destructive"
-                        className="h-8 w-8"
+                        className="size-8"
                       >
-                        <XIcon className="h-4 w-4" />
+                        <XIcon className="size-4" />
                       </Button>
                     </FileUploadItemDelete>
                   </ButtonGroup>

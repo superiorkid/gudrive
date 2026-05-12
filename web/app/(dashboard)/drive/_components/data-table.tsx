@@ -27,7 +27,7 @@ export function DataTable<TData extends TNode, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
-  const router = useRouter()
+  const { push } = useRouter()
   const pathname = usePathname()
 
   const table = useReactTable({
@@ -38,7 +38,7 @@ export function DataTable<TData extends TNode, TValue>({
 
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder" && !pathname.includes("trash")) {
-      router.push(`/drive/folders/${node.id}`)
+      push(`/drive/folders/${node.id}`)
     } else {
       console.log("Opening file preview for:", node.name)
     }

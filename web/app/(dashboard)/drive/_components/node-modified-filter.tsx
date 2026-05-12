@@ -25,12 +25,13 @@ import {
   Settings2Icon,
   XIcon,
 } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { DateRange } from "react-day-picker"
 
-export const NodeModifiedFilter = () => {
+const NodeModifiedFilter = () => {
   const [modified, setModified] = useModified()
 
+  const defaultMonth = useMemo(() => new Date(2026, 4), [])
   const [range, setRange] = useState<DateRange | undefined>()
 
   const handleSelectPreset = (value: string) => {
@@ -96,7 +97,7 @@ export const NodeModifiedFilter = () => {
                   selected={range}
                   onSelect={setRange}
                   numberOfMonths={1}
-                  defaultMonth={new Date(2026, 4)}
+                  defaultMonth={defaultMonth}
                 />
                 <div className="border-t p-2">
                   <Button

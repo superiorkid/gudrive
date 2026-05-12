@@ -121,3 +121,11 @@ def apply_sort(
         return query.order_by(folder_order, primary_sort)
 
     return query.order_by(primary_sort)
+
+
+def apply_status_filter(query, status: str):
+    if status == "active":
+        return query.where(Node.deleted_at.is_(None))
+    elif status == "trashed":
+        return query.where(Node.deleted_at.is_not(None))
+    return query

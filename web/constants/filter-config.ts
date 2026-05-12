@@ -31,7 +31,7 @@ export const FILTER_CONFIG = {
       { label: "Date Trashed", value: "date-trashed", icon: CalendarClockIcon },
     ],
     direction: [
-      { label: "New to Old", value: "desc", icon: ArrowDownAZIcon }, // Usually desc for 'Newest'
+      { label: "New to Old", value: "desc", icon: ArrowDownAZIcon },
       { label: "Old to New", value: "asc", icon: ArrowUpZAIcon },
     ],
   },

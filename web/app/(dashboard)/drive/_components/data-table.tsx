@@ -16,7 +16,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 interface DataTableProps<TData extends TNode, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -28,6 +28,8 @@ export function DataTable<TData extends TNode, TValue>({
   data,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter()
+  const pathname = usePathname()
+
   const table = useReactTable({
     data,
     columns,
@@ -35,7 +37,7 @@ export function DataTable<TData extends TNode, TValue>({
   })
 
   const handleNodeNavigation = (node: TNode) => {
-    if (node.type === "folder") {
+    if (node.type === "folder" && !pathname.includes("trash")) {
       router.push(`/drive/folders/${node.id}`)
     } else {
       console.log("Opening file preview for:", node.name)

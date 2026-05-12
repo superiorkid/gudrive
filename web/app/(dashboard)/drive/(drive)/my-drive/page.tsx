@@ -35,7 +35,14 @@ const Page = async ({ searchParams }: Props) => {
       sortBy,
     }),
     queryFn: () =>
-      fetchNodes({ type, modified, folderGroup, sortDirection, sortBy }),
+      fetchNodes({
+        type,
+        modified,
+        folderGroup,
+        sortDirection,
+        sortBy,
+        status: "active",
+      }),
   })
 
   return (

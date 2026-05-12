@@ -9,6 +9,7 @@ export const nodeKeys = {
       folderGroup?: string
       sortDirection?: string
       sortBy?: string
+      status?: string
     } = {}
   ) =>
     [
@@ -20,6 +21,7 @@ export const nodeKeys = {
         folderGroup: params.folderGroup ?? "top",
         sortDirection: params.sortDirection ?? "asc",
         sortBy: params.sortBy ?? "name",
+        status: params.status ?? "active",
       },
     ] as const,
   details: () => [...nodeKeys.base, "detail"] as const,

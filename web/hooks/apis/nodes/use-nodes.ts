@@ -10,6 +10,7 @@ export const useNodes = (
     folderGroup?: string
     sortDirection?: string
     sortBy?: string
+    status?: "active" | "trashed"
   } = {}
 ) => {
   return useQuery({
@@ -20,6 +21,7 @@ export const useNodes = (
       folderGroup: params.folderGroup,
       sortBy: params.sortBy,
       sortDirection: params.sortDirection,
+      status: params.status,
     }),
     queryFn: () =>
       fetchNodes({
@@ -29,6 +31,7 @@ export const useNodes = (
         folderGroup: params.folderGroup,
         sortBy: params.sortBy,
         sortDirection: params.sortDirection,
+        status: params.status,
       }),
   })
 }

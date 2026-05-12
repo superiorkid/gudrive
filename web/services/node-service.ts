@@ -28,7 +28,13 @@ export const fetchNodes = async (
     folderGroup?: string
     sortDirection?: string
     sortBy?: string
-  } = { folderGroup: "top", sortDirection: "asc", sortBy: "name" }
+    status?: "active" | "trashed"
+  } = {
+    folderGroup: "top",
+    sortDirection: "asc",
+    sortBy: "name",
+    status: "active",
+  }
 ) => {
   try {
     const response = await axiosInstance("/v1/nodes", {
@@ -39,6 +45,7 @@ export const fetchNodes = async (
         ...(params.folderGroup && { folder_group: params.folderGroup }),
         ...(params.sortDirection && { sort_direction: params.sortDirection }),
         ...(params.sortBy && { sort_by: params.sortBy }),
+        ...(params.status && { status: params.status }),
       },
     })
     return response.data as ApiResponse<TNode[]>
@@ -71,6 +78,23 @@ export const createNode = async (params: {
       parent_id?: string
       created_at: Date
     }>
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+      console.error("API Error Status:", axiosError.response?.status)
+      console.error("Server Data:", axiosError.response?.data)
+    } else if (error instanceof Error) {
+      console.error("Native Erro:", error.message)
+    } else {
+      console.error("Unexpected Error:", error)
+    }
+  }
+}
+
+export const deleteNode = async (nodeId: string) => {
+  try {
+    const response = await axiosInstance.delete(`/v1/nodes/${nodeId}`)
+    return response.data as ApiResponse<{ ok: boolean }>
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError

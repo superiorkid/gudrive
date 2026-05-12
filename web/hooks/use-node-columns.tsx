@@ -21,6 +21,7 @@ import {
   TrashIcon,
 } from "lucide-react"
 import { useMemo } from "react"
+import { useSoftDeleteNode } from "./apis/nodes/use-soft-delete-node"
 import { useSortBy } from "./use-sort-by"
 
 type TableVariant = "default" | "trash"
@@ -98,50 +99,66 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
 
     const actionColumn: ColumnDef<TNode> = {
       id: "actions",
-      cell: ({ row }) => (
-        <div onClick={(event) => event.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-44">
-              {variant === "trash" ? (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => console.log("Restore", row.original.id)}
-                  >
-                    Restore Item
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
-                    Delete Permanently
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem>
-                    <DownloadIcon className="mr-2 size-4" /> Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <PencilIcon className="mr-2 size-4" /> Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <StarIcon className="mr-2 size-4" /> Add to Starred
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">
-                    <TrashIcon className="mr-2 size-4" /> Move to Trash
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const nodeId = row.original.id
+        return <ActionRow nodeId={nodeId} variant={variant} />
+      },
     }
 
     return [...baseColumns, ...conditionalColumns, actionColumn]
   }, [variant, sortBy])
+}
+
+function ActionRow({
+  nodeId,
+  variant,
+}: {
+  nodeId: string
+  variant: TableVariant
+}) {
+  const { mutate: softDeleteMutation, isPending } = useSoftDeleteNode()
+
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <MoreHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44">
+          {variant === "trash" ? (
+            <>
+              <DropdownMenuItem onClick={() => console.log("Restore", nodeId)}>
+                Restore Item
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive">
+                Delete Permanently
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem>
+                <DownloadIcon className="mr-2 size-4" /> Download
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <PencilIcon className="mr-2 size-4" /> Rename
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <StarIcon className="mr-2 size-4" /> Add to Starred
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => softDeleteMutation(nodeId)}
+              >
+                <TrashIcon className="mr-2 size-4" /> Move to Trash
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
 }

@@ -4,6 +4,7 @@ import {
   HouseIcon,
   LucideIcon,
   StarIcon,
+  Trash2Icon,
   TrashIcon,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
@@ -47,7 +48,7 @@ export function useSideMenu() {
       {
         title: "Trash",
         url: `/drive/trash?${searchParams.toString()}`,
-        icon: TrashIcon,
+        icon: Trash2Icon,
         isActive: pathname.includes("/drive/trash"),
       },
     ]

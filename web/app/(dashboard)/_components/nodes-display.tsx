@@ -2,15 +2,16 @@
 
 import { Display, useDisplay } from "@/hooks/use-display"
 import { TNode } from "@/types/node-type"
-import { columns } from "../drive/(drive)/my-drive/_components/columns"
+import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "../drive/_components/data-table"
 import GridNodes from "./grid-nodes"
 
 type Props = {
   data: Array<TNode>
+  columns: ColumnDef<TNode>[]
 }
 
-const NodesDisplay = ({ data }: Props) => {
+export const NodesDisplay = ({ data, columns }: Props) => {
   const [display] = useDisplay()
 
   return (

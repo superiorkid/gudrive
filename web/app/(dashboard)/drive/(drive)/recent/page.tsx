@@ -1,12 +1,12 @@
-import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 import { Suspense } from "react"
+import RecentPage from "./_components/recent-page"
 
-const RecentPage = () => {
+const Page = () => {
   return (
     <Suspense>
-      <NodesDisplay data={[]} />
+      <RecentPage />
     </Suspense>
   )
 }
 
-export default RecentPage
+export default Page

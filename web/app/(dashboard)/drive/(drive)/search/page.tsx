@@ -1,12 +1,12 @@
-import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 import { Suspense } from "react"
+import SearchPage from "./_components/search-page"
 
-const SearchPage = () => {
+const Page = () => {
   return (
     <Suspense>
-      <NodesDisplay data={[]} />
+      <SearchPage />
     </Suspense>
   )
 }
 
-export default SearchPage
+export default Page

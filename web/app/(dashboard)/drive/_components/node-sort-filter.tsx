@@ -10,42 +10,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FILTER_CONFIG } from "@/constants/filter-config"
 import { useFoldersGroup } from "@/hooks/use-folders-group"
 import { useSortBy } from "@/hooks/use-sort-by"
 import { useSortDirection } from "@/hooks/use-sort-direction"
 import { cn } from "@/lib/utils"
 import {
-  ArrowDownAZIcon,
-  ArrowUpZAIcon,
-  CalendarClockIcon,
   ChevronDownIcon,
   FilesIcon,
   FolderTreeIcon,
   SortAscIcon,
-  TypeIcon,
 } from "lucide-react"
 
-const sortByOptions = [
-  { label: "Name", value: "name", icon: TypeIcon },
-  { label: "Date Modified", value: "date-modified", icon: CalendarClockIcon },
-]
-
-const directionOptions = [
-  { label: "A to Z", value: "asc", icon: ArrowDownAZIcon },
-  { label: "Z to A", value: "desc", icon: ArrowUpZAIcon },
-]
+type Props = {
+  variant?: "default" | "trash"
+}
 
 const folderOptions = [
   { label: "On Top", value: "top", icon: FolderTreeIcon },
   { label: "Mixed with files", value: "mixed", icon: FilesIcon },
 ]
 
-const NodeSortFilter = () => {
+const NodeSortFilter = ({ variant = "default" }: Props) => {
   const [folderGroup, setFolderGroup] = useFoldersGroup()
   const [sortDirection, setSortDirection] = useSortDirection()
   const [sortBy, setSortBy] = useSortBy()
 
-  const activeSort = sortByOptions.find((s) => s.value === sortBy)
+  const options = FILTER_CONFIG[variant]
+
+  const activeSort = options.sort.find((s) => s.value === sortBy)
   const ActiveIcon = activeSort?.icon || SortAscIcon
 
   return (
@@ -61,7 +54,7 @@ const NodeSortFilter = () => {
       <DropdownMenuContent align="start" className="w-auto min-w-52">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-          {sortByOptions.map((opt) => (
+          {options.sort.map((opt) => (
             <SortItem
               key={opt.value}
               label={opt.label}
@@ -76,7 +69,7 @@ const NodeSortFilter = () => {
 
         <DropdownMenuGroup>
           <DropdownMenuLabel>Sort Direction</DropdownMenuLabel>
-          {directionOptions.map((opt) => (
+          {options.direction.map((opt) => (
             <SortItem
               key={opt.value}
               label={opt.label}
@@ -87,20 +80,23 @@ const NodeSortFilter = () => {
           ))}
         </DropdownMenuGroup>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Folders</DropdownMenuLabel>
-          {folderOptions.map((opt) => (
-            <SortItem
-              key={opt.value}
-              label={opt.label}
-              icon={opt.icon}
-              isActive={folderGroup === opt.value}
-              onClick={() => setFolderGroup(opt.value)}
-            />
-          ))}
-        </DropdownMenuGroup>
+        {variant !== "trash" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Folders</DropdownMenuLabel>
+              {folderOptions.map((opt) => (
+                <SortItem
+                  key={opt.value}
+                  label={opt.label}
+                  icon={opt.icon}
+                  isActive={folderGroup === opt.value}
+                  onClick={() => setFolderGroup(opt.value)}
+                />
+              ))}
+            </DropdownMenuGroup>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -1,26 +1,21 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Suspense } from "react"
+"use client"
+
+import { usePathname } from "next/navigation"
 import NodeModifiedFilter from "./node-modified-filter"
 import NodeSortFilter from "./node-sort-filter"
 import NodeTypeFilter from "./node-type-filter"
 
 const NodeFilters = () => {
+  const pathname = usePathname()
+
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center space-x-2">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
-          ))}
-        </div>
-      }
-    >
-      <div className="flex items-center space-x-2">
-        <NodeTypeFilter />
-        <NodeModifiedFilter />
-        <NodeSortFilter />
-      </div>
-    </Suspense>
+    <div className="flex items-center space-x-2">
+      <NodeTypeFilter />
+      <NodeModifiedFilter />
+      <NodeSortFilter
+        variant={pathname.includes("trash") ? "trash" : "default"}
+      />
+    </div>
   )
 }
 

@@ -1,12 +1,12 @@
-import NodesDisplay from "@/app/(dashboard)/_components/nodes-display"
 import { Suspense } from "react"
+import StarredPage from "./_components/starred-page"
 
-const StarredPage = () => {
+const Page = () => {
   return (
     <Suspense>
-      <NodesDisplay data={[]} />
+      <StarredPage />
     </Suspense>
   )
 }
 
-export default StarredPage
+export default Page

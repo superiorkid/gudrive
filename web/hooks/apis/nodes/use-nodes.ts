@@ -33,5 +33,17 @@ export const useNodes = (
         sortDirection: params.sortDirection,
         status: params.status,
       }),
+    refetchInterval: (query) => {
+      const res = query.state.data
+      if (!res) return false
+
+      const hasProcessing = res.data.some(
+        (node) =>
+          node.preview_status === "processing" ||
+          node.preview_status === "pending"
+      )
+
+      return hasProcessing ? 2000 : false
+    },
   })
 }

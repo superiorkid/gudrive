@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import (
@@ -26,6 +27,13 @@ from app.models.mixins import TimestampMixin
 class NodeType(enum.Enum):
     FILE = "file"
     FOLDER = "folder"
+
+
+class PreviewStatus(enum.Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    READY = "ready"
+    FAILED = "failed"
 
 
 class Node(TimestampMixin, Base):
@@ -59,6 +67,12 @@ class Node(TimestampMixin, Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+    )
+    preview_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    preview_status: Mapped[PreviewStatus] = mapped_column(
+        Enum(PreviewStatus),
+        nullable=False,
+        default=PreviewStatus.PENDING,
     )
 
     __table_args__ = (

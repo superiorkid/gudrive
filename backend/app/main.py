@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api import api_router
 from app.common.error_handlers import setup_exception_handlers
@@ -12,6 +13,10 @@ def create_application() -> FastAPI:
     )
     setup_exception_handlers(application)
     cors_middleware(application)
+
+    application.mount(
+        "/thumbnails", StaticFiles(directory="thumbnails"), name="thumbnails"
+    )
 
     application.include_router(api_router, prefix="/api/v1")
 

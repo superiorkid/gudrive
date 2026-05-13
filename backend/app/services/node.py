@@ -162,6 +162,8 @@ async def get_nodes_service(
             ),
             "size": node.size,
             "mime_type": node.mime_type,
+            "preview_url": node.preview_url,
+            "preview_status": node.preview_status,
             "created_at": node.created_at,
             "updated_at": node.updated_at,
             "deleted_at": node.deleted_at,
@@ -194,6 +196,8 @@ async def detail_node_service(
         "parent_id": node.parent_id,
         "mime_type": node.mime_type,
         "size": node.size,
+        "preview_url": node.preview_url,
+        "preview_status": node.preview_status,
         "created_at": node.created_at,
         "updated_at": node.updated_at,
     }

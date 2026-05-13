@@ -8,7 +8,7 @@ from app.core.config import get_configs
 
 config = get_configs()
 
-DATABASE_URL = config.database_url
+DATABASE_URL: str = config.database_url
 
 
 class Base(AsyncAttrs, DeclarativeBase):

@@ -12,4 +12,6 @@ export type TNode = {
   created_at: Date
   updated_at: Date
   deleted_at?: Date
+  preview_url?: string
+  preview_status: string
 }

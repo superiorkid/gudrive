@@ -7,7 +7,13 @@ import { useSoftDeleteNode } from "@/hooks/apis/nodes/use-soft-delete-node"
 import { useDisplay } from "@/hooks/use-display"
 import { getFileIcon } from "@/lib/folder-icon"
 import { TNode } from "@/types/node-type"
-import { FolderIcon, MoreHorizontalIcon } from "lucide-react"
+import {
+  ClockIcon,
+  FolderIcon,
+  ImageOffIcon,
+  Loader2Icon,
+  MoreHorizontalIcon,
+} from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import NodeActionDropdown from "./node-action-dropdown"
@@ -87,17 +93,35 @@ const NodeCard = ({
             )}
 
             {isFile && (
-              <div className="relative aspect-square">
-                <Image
-                  fill
-                  src="https://images.unsplash.com/photo-1566396223585-c8fbf7fa6b6d?q=80&w=1549&auto=format&fit=crop&ixlib=rb-4.1.0"
-                  alt={`image preview ${node.name}`}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover"
-                  quality={80}
-                  decoding="async"
-                  loading="lazy"
-                />
+              <div className="relative aspect-square overflow-hidden rounded-md">
+                {node.preview_status === "ready" && node.preview_url ? (
+                  <Image
+                    fill
+                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${node.preview_url}`}
+                    alt={`image preview ${node.name}`}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
+                    quality={80}
+                    decoding="async"
+                    loading="lazy"
+                  />
+                ) : node.preview_status === "processing" ? (
+                  <div className="flex h-full w-full animate-pulse items-center justify-center bg-muted">
+                    <Loader2Icon className="animate-spin text-muted-foreground" />
+                  </div>
+                ) : node.preview_status === "pending" ? (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <ClockIcon className="text-muted-foreground" />
+                  </div>
+                ) : node.preview_status === "failed" ? (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <ImageOffIcon className="text-red-500" />
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <ImageOffIcon />
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -20,6 +20,7 @@ from app.models.node import Node, NodeType
 from app.models.upload_session import UploadSession, UploadStatus
 from app.models.user import User
 from app.schemas.upload import InitializeUploadRequest, InitializeUploadResponse
+from app.tasks.uploads import generate_file_preview
 
 
 async def initialize_upload_service(
@@ -252,6 +253,9 @@ async def finalize_upload_service(
 
     session.status = UploadStatus.COMPLETED
     await db.commit()
+    await db.refresh(node)
+
+    generate_file_preview.delay(str(node.id))
 
     return {
         "file_id": str(node.id),

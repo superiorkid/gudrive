@@ -10,6 +10,7 @@ dependencies = [
     "celery>=5.6.3",
     "fastapi[standard]>=0.136.1",
     "passlib[bcrypt]>=1.7.4",
+    "pillow>=12.2.0",
     "pydantic-settings>=2.14.0",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.27",

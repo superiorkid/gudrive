@@ -1,14 +1,18 @@
 from typing import AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from jose import jwt
 from jose.exceptions import JWTError
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_user, oauth2_scheme
 from app.core.config import Settings, get_configs
+from app.core.redis import redis_client
 from app.database import async_session_maker
 from app.models.user import User
+from app.services.cache import CacheService
+from app.services.rate_limiter import RateLimiter
 
 
 async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -45,3 +49,32 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if not current_user.is_verified:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+async def get_redis() -> Redis:
+    return await redis_client.client
+
+
+async def get_cache(redis: Redis = Depends(get_redis)) -> CacheService:
+    return CacheService(redis)
+
+
+def rate_limit(limit: int, window: int):
+    async def dependency(
+        request: Request,
+        redis: Redis = Depends(get_redis),
+    ):
+        limiter = RateLimiter(redis)
+        client_ip = request.client.host if request.client else "unknown"
+
+        result = await limiter.check_rate_limit(f"api:{client_ip}", limit, window)
+
+        if not result["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded",
+            )
+
+        return result
+
+    return dependency

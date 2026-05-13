@@ -2,13 +2,13 @@ from fastapi import FastAPI
 
 from app.api import api_router
 from app.common.error_handlers import setup_exception_handlers
+from app.core.redis import lifespan
 from app.middlewares.cors import cors_middleware
 
 
 def create_application() -> FastAPI:
     application = FastAPI(
-        title="FastAPI resumable uploads file",
-        version="1.0.0",
+        title="FastAPI resumable uploads file", version="1.0.0", lifespan=lifespan
     )
     setup_exception_handlers(application)
     cors_middleware(application)

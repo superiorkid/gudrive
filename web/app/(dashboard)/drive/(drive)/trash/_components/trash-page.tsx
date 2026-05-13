@@ -7,6 +7,7 @@ import { useNodeColumns } from "@/hooks/use-node-columns"
 import { useSortBy } from "@/hooks/use-sort-by"
 import { useSortDirection } from "@/hooks/use-sort-direction"
 import { useType } from "@/hooks/use-type"
+import { NodesSkeleton } from "../../../_components/node-skeleton"
 
 const TrashPage = () => {
   const [type] = useType()
@@ -25,11 +26,7 @@ const TrashPage = () => {
   })
 
   if (isPending) {
-    return (
-      <div>
-        <p>Loading...</p>
-      </div>
-    )
+    return <NodesSkeleton rows={12} />
   }
 
   return <NodesDisplay data={nodes?.data || []} columns={columns} />

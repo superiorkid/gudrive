@@ -6,6 +6,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -35,6 +36,8 @@ const AppBreadcrumb = () => {
     })),
   ]
 
+  const isTrashPage = pathname.includes("trash")
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -54,12 +57,16 @@ const AppBreadcrumb = () => {
             <React.Fragment key={item.href}>
               <BreadcrumbItem>
                 {isLast ? (
-                  <NodeActionMenu>
-                    <button className="flex cursor-pointer items-center gap-1 text-foreground transition-colors outline-none hover:text-primary">
-                      {labelContent}
-                      <ChevronDownIcon className="size-3.5" />
-                    </button>
-                  </NodeActionMenu>
+                  isTrashPage ? (
+                    <BreadcrumbPage>{labelContent}</BreadcrumbPage>
+                  ) : (
+                    <NodeActionMenu>
+                      <button className="flex cursor-pointer items-center gap-1 text-foreground transition-colors outline-none hover:text-primary">
+                        {labelContent}
+                        <ChevronDownIcon className="size-3.5" />
+                      </button>
+                    </NodeActionMenu>
+                  )
                 ) : (
                   <BreadcrumbLink asChild>
                     <Link href={item.href}>{labelContent}</Link>

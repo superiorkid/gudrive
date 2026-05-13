@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { FilePlusIcon, FolderPlusIcon } from "lucide-react"
+import { useState } from "react"
 import CreateFolderForm from "../(dashboard)/_components/create-folder-form"
 
 type Props = {
@@ -20,8 +23,10 @@ type Props = {
 }
 
 const NodeActionMenu = ({ children }: Props) => {
+  const [openDialog, setOpenDialog] = useState<boolean>(false)
+
   return (
-    <Dialog>
+    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-auto min-w-52">
@@ -44,7 +49,7 @@ const NodeActionMenu = ({ children }: Props) => {
         <DialogHeader>
           <DialogTitle>New Folder</DialogTitle>
         </DialogHeader>
-        <CreateFolderForm />
+        <CreateFolderForm onSuccess={() => setOpenDialog(false)} />
       </DialogContent>
     </Dialog>
   )

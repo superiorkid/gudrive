@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     upload_chunk_size: int = 5 * 1024 * 1024  # 5mb
     redis_url: str
 
+    @property
+    def celery_broker_url(self) -> str:
+        return self.redis_url
+
+    @property
+    def celery_result_url(self):
+        return self.redis_url
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

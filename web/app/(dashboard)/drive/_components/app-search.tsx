@@ -164,7 +164,7 @@ const AppSearch = ({ className }: Props) => {
                 )}
               >
                 <MaterialSymbolsSubdirectoryArrowLeft />
-                Show All
+                All Results
               </Link>
             </div>
           </div>

@@ -1,9 +1,4 @@
 import AppContainer from "@/components/container"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Stat,
@@ -17,12 +12,12 @@ import {
   HardDriveIcon,
   ImageIcon,
   MusicIcon,
-  SearchIcon,
   StarIcon,
   UploadCloudIcon,
   VideoIcon,
 } from "lucide-react"
 import { Suspense } from "react"
+import AppSearch from "../../_components/app-search"
 import NodeModifiedFilter from "../../_components/node-modified-filter"
 import NodeTypeFilter from "../../_components/node-type-filter"
 
@@ -32,12 +27,7 @@ const DriveHomePage = () => {
       <div className="mx-auto max-w-xl space-y-4 pt-28 pb-10">
         <h1 className="text-center text-3xl font-semibold">Welcome to Drive</h1>
 
-        <InputGroup className="h-10 2xl:h-12">
-          <InputGroupInput placeholder="Search In Drive" />
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-        </InputGroup>
+        <AppSearch />
 
         <div className="flex items-center justify-center gap-4">
           <Suspense

@@ -1,5 +1,4 @@
 import AppContainer from "@/components/container"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Stat,
   StatIndicator,
@@ -16,10 +15,7 @@ import {
   UploadCloudIcon,
   VideoIcon,
 } from "lucide-react"
-import { Suspense } from "react"
 import AppSearch from "../../_components/app-search"
-import NodeModifiedFilter from "../../_components/node-modified-filter"
-import NodeTypeFilter from "../../_components/node-type-filter"
 
 const DriveHomePage = () => {
   return (
@@ -28,21 +24,6 @@ const DriveHomePage = () => {
         <h1 className="text-center text-3xl font-semibold">Welcome to Drive</h1>
 
         <AppSearch />
-
-        <div className="flex items-center justify-center gap-4">
-          <Suspense
-            fallback={
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
-                ))}
-              </div>
-            }
-          >
-            <NodeTypeFilter />
-            <NodeModifiedFilter />
-          </Suspense>
-        </div>
       </div>
       <AppContainer className="grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4 2xl:max-w-6xl">
         <Stat>

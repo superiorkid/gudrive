@@ -32,8 +32,8 @@ const Page = async ({ searchParams }: Props) => {
 
   await queryClient.prefetchQuery({
     queryKey: nodeKeys.list({
-      type: type ?? "",
-      modified: modified ?? "",
+      type,
+      modified,
       sortDirection,
       sortBy: sortBy ?? "date-trashed",
       status: "trashed",

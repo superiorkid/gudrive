@@ -11,31 +11,38 @@ export const useNodes = (
     sortDirection?: string
     sortBy?: string
     status?: "active" | "trashed"
+    debounceKeyword?: string
+    enabled?: boolean
   } = {}
 ) => {
+  const { enabled = true, ...rest } = params
+
   return useQuery({
     queryKey: nodeKeys.list({
-      parentId: params.parentId,
-      type: params.type,
-      modified: params.modified,
-      folderGroup: params.folderGroup,
-      sortBy: params.sortBy,
-      sortDirection: params.sortDirection,
-      status: params.status,
+      parentId: rest.parentId,
+      type: rest.type,
+      modified: rest.modified,
+      folderGroup: rest.folderGroup,
+      sortBy: rest.sortBy,
+      sortDirection: rest.sortDirection,
+      status: rest.status,
+      keyword: rest.debounceKeyword,
     }),
     queryFn: () =>
       fetchNodes({
-        parentId: params.parentId,
-        type: params.type,
-        modified: params.modified,
-        folderGroup: params.folderGroup,
-        sortBy: params.sortBy,
-        sortDirection: params.sortDirection,
-        status: params.status,
+        parentId: rest.parentId,
+        type: rest.type,
+        modified: rest.modified,
+        folderGroup: rest.folderGroup,
+        sortBy: rest.sortBy,
+        sortDirection: rest.sortDirection,
+        status: rest.status,
+        keyword: rest.debounceKeyword,
       }),
     refetchInterval: (query) => {
       const res = query.state.data
       if (!res) return false
+      if (!rest.debounceKeyword) return false
 
       const hasProcessing = res.data.some(
         (node) =>
@@ -45,5 +52,6 @@ export const useNodes = (
 
       return hasProcessing ? 2000 : false
     },
+    enabled,
   })
 }

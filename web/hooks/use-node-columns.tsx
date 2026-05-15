@@ -70,7 +70,7 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
           cell: ({ row }) => (
             <div className="flex items-center gap-2 text-muted-foreground">
               <HardDriveIcon className="size-4" />
-              <span>{row.original.parent?.name || "Root"}</span>
+              <span>{row.original.parent?.name || "My Drive"}</span>
             </div>
           ),
         }

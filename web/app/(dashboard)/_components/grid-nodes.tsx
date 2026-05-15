@@ -2,10 +2,9 @@
 
 import { useFoldersGroup } from "@/hooks/use-folders-group"
 import { TNode } from "@/types/node-type"
-import { FolderOpenIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
-import NodeCard from "./node-card"
 import NoItemsView from "./no-items-view"
+import NodeCard from "./node-card"
 
 type Props = {
   data: Array<TNode>

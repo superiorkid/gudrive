@@ -10,6 +10,7 @@ from app.common.exceptions import (
     BadRequestException,
     NotFoundException,
 )
+from app.lib.is_descendant import is_descendant
 from app.models.node import Node, NodeType
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
@@ -20,7 +21,6 @@ from app.services.node_query import (
     apply_status_filter,
     normalize_sort,
 )
-from app.utils.is_descendant import is_descendant
 
 
 async def create_node_service(
@@ -87,16 +87,17 @@ async def get_nodes_service(
     sort_direction: Optional[str],
     folder_group: Optional[str],
     status: Optional[str],
+    keyword: Optional[str],
 ):
     status = status if status else "active"
 
     if parent_id:
-        query = select(Node).where(
+        parent_query = select(Node).where(
             Node.id == parent_id,
             Node.owner_id == current_user.id,
         )
-        # query = apply_status_filter(query, status)
-        result = await db.execute(query)
+
+        result = await db.execute(parent_query)
         parent = result.scalar_one_or_none()
 
         if not parent:
@@ -104,7 +105,8 @@ async def get_nodes_service(
 
         if parent.type != NodeType.FOLDER:
             raise BadRequestException(
-                "Parent must be a folder", details={"parent_type": parent.type}
+                "Parent must be a folder",
+                details={"parent_type": parent.type},
             )
 
     if status == "trashed":
@@ -116,16 +118,24 @@ async def get_nodes_service(
             .where(
                 Node.owner_id == current_user.id,
                 Node.deleted_at.is_not(None),
-                or_(Node.parent_id.is_(None), Parent.deleted_at.is_(None)),
+                or_(
+                    Node.parent_id.is_(None),
+                    Parent.deleted_at.is_(None),
+                ),
             )
         )
     else:
         query = select(Node).where(
             Node.owner_id == current_user.id,
-            Node.parent_id == parent_id,
         )
 
+    if not keyword:
+        query = query.where(Node.parent_id == parent_id)
+    elif parent_id:
+        query = query.where(Node.parent_id == parent_id)
+
     query = query.options(joinedload(Node.parent))
+
     query = apply_status_filter(query, status)
 
     if type:
@@ -134,13 +144,37 @@ async def get_nodes_service(
     if modified:
         query = apply_modified_filter(query=query, modified=modified)
 
-    sort_by, sort_direction, folder_group = normalize_sort(
-        sort_by=sort_by if sort_by else "",
-        sort_direction=sort_direction if sort_direction else "",
-        folder_group=folder_group if folder_group else "",
-    )
+    if keyword:
+        ts_query = func.websearch_to_tsquery("simple", keyword)
 
-    query = apply_sort(query, sort_by, sort_direction, folder_group, type, status)
+        query = query.where(
+            or_(
+                Node.search_vector.op("@@")(ts_query),
+                Node.name.op("%")(keyword),
+                Node.name.ilike(f"%{keyword}%"),
+            )
+        )
+
+        query = query.order_by(
+            func.ts_rank(Node.search_vector, ts_query).desc(),
+            func.similarity(Node.name, keyword).desc(),
+            func.lower(Node.name).asc(),
+        )
+    else:
+        sort_by, sort_direction, folder_group = normalize_sort(
+            sort_by=sort_by or "",
+            sort_direction=sort_direction or "",
+            folder_group=folder_group or "",
+        )
+
+        query = apply_sort(
+            query,
+            sort_by,
+            sort_direction,
+            folder_group,
+            type,
+            status,
+        )
 
     result = await db.execute(query)
     nodes = result.scalars().all()

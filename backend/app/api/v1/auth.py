@@ -13,9 +13,9 @@ from app.core.auth import (
     get_password_hash,
 )
 from app.core.config import Settings, get_configs
+from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.user import CreateUser
-from app.utils.success_response import success_response
 
 auth_router_v1 = APIRouter(tags=["Authentication"])
 

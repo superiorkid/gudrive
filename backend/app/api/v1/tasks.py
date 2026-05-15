@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.celery import celery_app
-from app.utils.success_response import success_response
+from app.lib.success_response import success_response
 
 tasks_router_v1 = APIRouter(tags=["Background Task"])
 

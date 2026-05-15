@@ -10,14 +10,16 @@ export const nodeKeys = {
       sortDirection?: string
       sortBy?: string
       status?: string
+      keyword?: string
     } = {}
   ) =>
     [
       ...nodeKeys.lists(),
       {
         parentId: params.parentId ?? null,
-        type: params.type ?? null,
-        modified: params.modified ?? null,
+        type: params.type ?? "",
+        modified: params.modified ?? "",
+        keyword: params.keyword ?? "",
         folderGroup: params.folderGroup ?? "top",
         sortDirection: params.sortDirection ?? "asc",
         sortBy: params.sortBy ?? "name",

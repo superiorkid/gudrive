@@ -23,6 +23,7 @@ export const fetchNodeDetail = async (id: string) => {
 export const fetchNodes = async (
   params: {
     parentId?: string
+    keyword?: string
     type?: string
     modified?: string
     folderGroup?: string
@@ -46,6 +47,7 @@ export const fetchNodes = async (
         ...(params.sortDirection && { sort_direction: params.sortDirection }),
         ...(params.sortBy && { sort_by: params.sortBy }),
         ...(params.status && { status: params.status }),
+        ...(params.keyword && { keyword: params.keyword }),
       },
     })
     return response.data as ApiResponse<TNode[]>

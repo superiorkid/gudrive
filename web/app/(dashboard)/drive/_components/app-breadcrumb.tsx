@@ -12,6 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNode } from "@/hooks/apis/nodes/use-node"
 import { useDisplay } from "@/hooks/use-display"
+import { useKeyword } from "@/hooks/use-keyword"
 import { formatLabel } from "@/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import Link from "next/link"
@@ -21,9 +22,42 @@ import { validate as uuidValidate } from "uuid"
 
 const AppBreadcrumb = () => {
   const [display] = useDisplay()
+  const [keyword] = useKeyword()
+
   const searchParams = new URLSearchParams({ display })
 
   const pathname = usePathname()
+
+  const isSearchPage = pathname.includes("search")
+  if (isSearchPage) {
+    return (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href={`/?${searchParams.toString()}`}>Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+
+          <BreadcrumbSeparator />
+
+          <BreadcrumbItem>
+            <BreadcrumbPage>
+              <span>
+                Search
+                {keyword && (
+                  <span className="ml-1 text-muted-foreground">
+                    for &ldquo;{keyword}&rdquo;
+                  </span>
+                )}
+              </span>
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    )
+  }
+
   const pathSegments = pathname.split("/").filter((segment) => segment !== "")
 
   const data = [

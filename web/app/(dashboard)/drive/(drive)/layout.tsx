@@ -1,13 +1,8 @@
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SearchIcon } from "lucide-react"
 import React, { Suspense } from "react"
 import AppContext from "../../_components/app-context"
 import AppBreadcrumb from "../_components/app-breadcrumb"
+import AppSearch from "../_components/app-search"
 import NodeDisplaySwitcher from "../_components/node-display-switcher"
 import NodeFilters from "../_components/node-filters"
 
@@ -19,12 +14,11 @@ const DriveLayout = ({ children }: Props) => {
   return (
     <main className="grid min-h-screen w-full grid-rows-[auto_1fr]">
       <div className="px-8 py-4">
-        <InputGroup className="h-10 max-w-md 2xl:max-w-xl">
-          <InputGroupInput placeholder="Search in Drive" />
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-        </InputGroup>
+        <Suspense
+          fallback={<Skeleton className="h-10 max-w-md 2xl:max-w-xl" />}
+        >
+          <AppSearch />
+        </Suspense>
       </div>
       <div className="space-y-4 px-8 pt-4 pb-8">
         <div className="flex items-center justify-between">

@@ -6,6 +6,7 @@ from typing import List, Optional
 from sqlalchemy import (
     UUID,
     BigInteger,
+    Computed,
     DateTime,
     Enum,
     ForeignKey,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -74,11 +76,15 @@ class Node(TimestampMixin, Base):
         nullable=False,
         default=PreviewStatus.PENDING,
     )
+    search_vector: Mapped[Optional[str]] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('simple', coalesce(name, ''))"), nullable=True
+    )
 
     __table_args__ = (
         Index("idx_parent_id", "parent_id"),
         Index("idx_owner_id", "owner_id"),
         Index("idx_deleted_at", "deleted_at"),
+        Index("idx_nodes_search_vector", "search_vector", postgresql_using="gin"),
         UniqueConstraint(
             "parent_id",
             "name",

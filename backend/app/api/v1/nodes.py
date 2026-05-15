@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_async_db_session, get_current_active_user
+from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
 from app.services.node import (
@@ -15,7 +16,6 @@ from app.services.node import (
     restore_node_service,
     update_node_service,
 )
-from app.utils.success_response import success_response
 
 nodes_router_v1 = APIRouter(tags=["Nodes"])
 
@@ -49,6 +49,7 @@ async def get_nodes(
     sort_direction: Optional[str] = "asc",
     folder_group: Optional[str] = "top",
     status: Optional[str] = "active",  # "active" | "trashed"
+    keyword: Optional[str] = None,
 ):
     result = await get_nodes_service(
         current_user=current_user,
@@ -60,6 +61,7 @@ async def get_nodes(
         sort_direction=sort_direction,
         folder_group=folder_group,
         status=status,
+        keyword=keyword,
     )
     return success_response(data=result)
 

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_async_db_session, get_current_active_user
 from app.core.config import Settings, get_configs
+from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.upload import InitializeUploadRequest, InitializeUploadResponse
 from app.services.upload import (
@@ -14,7 +15,6 @@ from app.services.upload import (
     initialize_upload_service,
     upload_chunk_service,
 )
-from app.utils.success_response import success_response
 
 uploads_router_v1 = APIRouter(tags=["Uploads"])
 

@@ -30,11 +30,13 @@ export const fetchNodes = async (
     sortDirection?: string
     sortBy?: string
     status?: "active" | "trashed"
+    scope?: "normal" | "starred"
   } = {
     folderGroup: "top",
     sortDirection: "asc",
     sortBy: "name",
     status: "active",
+    scope: "normal",
   }
 ) => {
   try {
@@ -48,6 +50,7 @@ export const fetchNodes = async (
         ...(params.sortBy && { sort_by: params.sortBy }),
         ...(params.status && { status: params.status }),
         ...(params.keyword && { keyword: params.keyword }),
+        ...(params.scope && { scope: params.scope }),
       },
     })
     return response.data as ApiResponse<TNode[]>
@@ -114,6 +117,26 @@ export const restoreNode = async (nodeId: string) => {
   try {
     const response = await axiosInstance.post(`/v1/nodes/${nodeId}/restore`)
     return response.data as ApiResponse<{ ok: boolean }>
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+      console.error("API Error Status:", axiosError.response?.status)
+      console.error("Server Data:", axiosError.response?.data)
+    } else if (error instanceof Error) {
+      console.error("Native Erro:", error.message)
+    } else {
+      console.error("Unexpected Error:", error)
+    }
+  }
+}
+
+export const toggleStar = async (nodeId: string) => {
+  try {
+    const response = await axiosInstance.post(`/v1/nodes/${nodeId}/starred`)
+    return response.data as ApiResponse<{
+      node_id: string
+      is_starred: boolean
+    }>
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError

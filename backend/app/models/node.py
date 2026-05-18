@@ -79,6 +79,11 @@ class Node(TimestampMixin, Base):
     search_vector: Mapped[Optional[str]] = mapped_column(
         TSVECTOR, Computed("to_tsvector('simple', coalesce(name, ''))"), nullable=True
     )
+    starred_by_users: Mapped[List["User"]] = relationship(
+        "User",
+        secondary="starred_nodes",
+        back_populates="starred_nodes",
+    )
 
     __table_args__ = (
         Index("idx_parent_id", "parent_id"),

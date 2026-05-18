@@ -30,6 +30,11 @@ class User(TimestampMixin, Base):
         "Node",
         back_populates="owner",
     )
+    starred_nodes: Mapped[List["Node"]] = relationship(
+        "Node",
+        secondary="starred_nodes",
+        back_populates="starred_by_users",
+    )
 
     @hybrid_property
     def is_verified(self):

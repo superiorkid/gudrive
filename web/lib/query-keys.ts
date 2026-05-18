@@ -11,6 +11,7 @@ export const nodeKeys = {
       sortBy?: string
       status?: string
       keyword?: string
+      scope?: string
     } = {}
   ) =>
     [
@@ -24,6 +25,7 @@ export const nodeKeys = {
         sortDirection: params.sortDirection ?? "asc",
         sortBy: params.sortBy ?? "name",
         status: params.status ?? "active",
+        scope: params.scope ?? "normal",
       },
     ] as const,
   details: () => [...nodeKeys.base, "detail"] as const,

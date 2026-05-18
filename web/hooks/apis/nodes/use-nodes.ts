@@ -13,9 +13,12 @@ export const useNodes = (
     status?: "active" | "trashed"
     debounceKeyword?: string
     enabled?: boolean
+    scope?: "normal" | "starred"
   } = {}
 ) => {
   const { enabled = true, ...rest } = params
+
+  const scope = rest.scope ?? "normal"
 
   return useQuery({
     queryKey: nodeKeys.list({
@@ -27,6 +30,7 @@ export const useNodes = (
       sortDirection: rest.sortDirection,
       status: rest.status,
       keyword: rest.debounceKeyword,
+      scope,
     }),
     queryFn: () =>
       fetchNodes({
@@ -38,6 +42,7 @@ export const useNodes = (
         sortDirection: rest.sortDirection,
         status: rest.status,
         keyword: rest.debounceKeyword,
+        scope,
       }),
     refetchInterval: (query) => {
       const res = query.state.data

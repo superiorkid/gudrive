@@ -9,6 +9,7 @@ export type TNode = {
   size?: number
   mime_type?: string
   storage_path?: string
+  is_starred: boolean
   created_at: Date
   updated_at: Date
   deleted_at?: Date

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { useRestoreNode } from "@/hooks/apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "@/hooks/apis/nodes/use-soft-delete-node"
+import { useToggleStar } from "@/hooks/apis/nodes/use-toggle-star"
 import { useDisplay } from "@/hooks/use-display"
 import { getFileIcon } from "@/lib/folder-icon"
 import { TNode } from "@/types/node-type"
@@ -25,6 +26,7 @@ type Props = {
   isFile: boolean
   isFolder: boolean
   isMixedView: boolean
+  isStarred: boolean
 }
 
 const NodeCard = ({
@@ -34,6 +36,7 @@ const NodeCard = ({
   isFile,
   isFolder,
   isMixedView,
+  isStarred,
 }: Props) => {
   const { push } = useRouter()
   const [display] = useDisplay()
@@ -42,6 +45,9 @@ const NodeCard = ({
     useSoftDeleteNode()
   const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
     useRestoreNode()
+
+  const { mutate: toggleStarMutation, isPending: toggleStarPending } =
+    useToggleStar(isStarred)
 
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder") {
@@ -71,6 +77,9 @@ const NodeCard = ({
               restoreNodePending={restoreNodePending}
               softDeleteMutation={softDeleteMutation}
               softDeleteNodePending={pendingSoftDelete}
+              isStarred={isStarred}
+              toggleStarMutation={toggleStarMutation}
+              toggleStarPending={toggleStarPending}
             >
               <Button
                 variant="ghost"

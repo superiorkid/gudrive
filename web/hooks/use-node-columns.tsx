@@ -6,13 +6,14 @@ import { getFileIcon } from "@/lib/folder-icon"
 import { formatBytes, formatDate } from "@/lib/utils"
 import { TNode } from "@/types/node-type"
 import { ColumnDef } from "@tanstack/react-table"
-import { HardDriveIcon, MoreHorizontalIcon } from "lucide-react"
+import { HardDriveIcon, MoreHorizontalIcon, StarIcon } from "lucide-react"
 import { useMemo } from "react"
 import { useRestoreNode } from "./apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "./apis/nodes/use-soft-delete-node"
+import { useToggleStar } from "./apis/nodes/use-toggle-star"
 import { useSortBy } from "./use-sort-by"
 
-type TableVariant = "default" | "trash"
+type TableVariant = "default" | "trash" | "starred"
 
 export const useNodeColumns = (variant: TableVariant = "default") => {
   const [sortBy] = useSortBy()
@@ -23,13 +24,14 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
         accessorKey: "name",
         header: "Name",
         cell: ({ row }) => {
-          const { name, type, mime_type } = row.original
+          const { name, type, mime_type, is_starred } = row.original
           return (
             <div className="flex items-center gap-3">
               <div className="size-5 shrink-0">
                 {getFileIcon(type, mime_type || "")}
               </div>
               <span className="max-w-50 truncate font-medium">{name}</span>
+              {is_starred && <StarIcon className="size-3 fill-foreground" />}
             </div>
           )
         },
@@ -44,43 +46,34 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
         header: "File Size",
         cell: ({ row }) => {
           const size = row.original.size
-          return <div>{size ? formatBytes(size) : "-"}</div>
+          return <div>{size ? formatBytes(size) : "Folder"}</div>
         },
       },
     ]
 
     const conditionalColumns: ColumnDef<TNode>[] = []
 
-    if (variant === "trash") {
-      conditionalColumns.push(
-        {
-          accessorKey: sortBy === "date-modified" ? "updated_at" : "deleted_at",
-          header: sortBy === "date-modified" ? "Last Modified" : "Date Trashed",
-          cell: ({ row }) => {
-            const dateFilter =
-              sortBy === "date-modified"
-                ? row.original.updated_at
-                : row.original.deleted_at
-            return <div>{formatDate(dateFilter?.toString() || "")}</div>
-          },
-        },
-        {
-          accessorKey: "parent",
-          header: "Original Location",
-          cell: ({ row }) => (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <HardDriveIcon className="size-4" />
-              <span>{row.original.parent?.name || "My Drive"}</span>
-            </div>
-          ),
-        }
-      )
-    } else {
+    const useDeletedAt = variant === "trash" && sortBy !== "date-modified"
+    conditionalColumns.push({
+      accessorKey: useDeletedAt ? "deleted_at" : "updated_at",
+      header: useDeletedAt ? "Date Trashed" : "Last Modified",
+      cell: ({ row }) => {
+        const date = useDeletedAt
+          ? row.original.deleted_at
+          : row.original.updated_at
+        return <div>{formatDate(date?.toString() || "")}</div>
+      },
+    })
+
+    if (variant === "trash" || variant === "starred") {
       conditionalColumns.push({
-        accessorKey: "updated_at",
-        header: "Last Modified",
+        accessorKey: "parent",
+        header: "Original Location",
         cell: ({ row }) => (
-          <div>{formatDate(row.original.updated_at.toString())}</div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <HardDriveIcon className="size-4" />
+            <span>{row.original.parent?.name || "My Drive"}</span>
+          </div>
         ),
       })
     }
@@ -88,8 +81,10 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
     const actionColumn: ColumnDef<TNode> = {
       id: "actions",
       cell: ({ row }) => {
-        const nodeId = row.original.id
-        return <ActionRow nodeId={nodeId} variant={variant} />
+        const { id: nodeId, is_starred: isStarred } = row.original
+        return (
+          <ActionRow nodeId={nodeId} variant={variant} isStarred={isStarred} />
+        )
       },
     }
 
@@ -100,14 +95,19 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
 function ActionRow({
   nodeId,
   variant,
+  isStarred,
 }: {
   nodeId: string
   variant: TableVariant
+  isStarred: boolean
 }) {
   const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
     useSoftDeleteNode()
   const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
     useRestoreNode()
+
+  const { mutate: toggleStarMutation, isPending: toggleStarPending } =
+    useToggleStar(isStarred)
 
   return (
     <div
@@ -127,6 +127,9 @@ function ActionRow({
         restoreNodePending={restoreNodePending}
         softDeleteMutation={softDeleteMutation}
         softDeleteNodePending={pendingSoftDelete}
+        isStarred={isStarred}
+        toggleStarMutation={toggleStarMutation}
+        toggleStarPending={toggleStarPending}
       >
         <Button
           variant="ghost"

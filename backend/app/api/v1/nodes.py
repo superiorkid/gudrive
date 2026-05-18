@@ -14,6 +14,7 @@ from app.services.node import (
     detail_node_service,
     get_nodes_service,
     restore_node_service,
+    toggle_star_service,
     update_node_service,
 )
 
@@ -50,6 +51,7 @@ async def get_nodes(
     folder_group: Optional[str] = "top",
     status: Optional[str] = "active",  # "active" | "trashed"
     keyword: Optional[str] = None,
+    scope: Optional[str] = None,  # "starred" | "normal" | etc.
 ):
     result = await get_nodes_service(
         current_user=current_user,
@@ -62,6 +64,7 @@ async def get_nodes(
         folder_group=folder_group,
         status=status,
         keyword=keyword,
+        scope=scope,
     )
     return success_response(data=result)
 
@@ -113,3 +116,13 @@ async def restore_node(
 ):
     await restore_node_service(db, current_user, node_id)
     return success_response(data={"ok": True})
+
+
+@nodes_router_v1.post("/{node_id}/starred")
+async def toggle_star(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    node_id: uuid.UUID,
+):
+    result = await toggle_star_service(db, current_user, node_id)
+    return success_response(data=result)

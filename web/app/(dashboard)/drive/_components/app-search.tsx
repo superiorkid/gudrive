@@ -23,11 +23,7 @@ import React, { useState } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { searchSchema, TSearchSchema } from "../schema"
 
-type Props = {
-  className?: string
-}
-
-const AppSearch = ({ className }: Props) => {
+const AppSearch = () => {
   const [isFocused, setIsFocused] = useState<boolean>(false)
   const [searchKeyword] = useKeyword()
 

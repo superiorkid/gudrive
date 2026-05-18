@@ -48,6 +48,7 @@ const GridNodes = ({ data }: Props) => {
             isFile={isFile}
             isMixedView={isMixedView}
             isTrashPage={isTrashPage}
+            isStarred={node.is_starred}
           />
         )
       })}

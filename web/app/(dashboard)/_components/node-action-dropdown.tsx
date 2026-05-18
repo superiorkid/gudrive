@@ -18,6 +18,9 @@ type Props = {
   restoreNodeMutation: (nodeId: string) => void
   softDeleteNodePending: boolean
   softDeleteMutation: (nodeId: string) => void
+  isStarred: boolean
+  toggleStarPending: boolean
+  toggleStarMutation: (nodeId: string) => void
 }
 
 const NodeActionDropdown = ({
@@ -28,6 +31,9 @@ const NodeActionDropdown = ({
   restoreNodePending,
   softDeleteMutation,
   softDeleteNodePending,
+  isStarred,
+  toggleStarMutation,
+  toggleStarPending,
 }: Props) => {
   return (
     <DropdownMenu>
@@ -56,8 +62,20 @@ const NodeActionDropdown = ({
               <PencilIcon className="mr-2 size-4" /> Rename
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <StarIcon className="mr-2 size-4" /> Add to Starred
+            <DropdownMenuItem
+              onClick={() => toggleStarMutation(nodeId)}
+              disabled={toggleStarPending}
+            >
+              {isStarred ? (
+                <>
+                  <StarIcon className="mr-2 size-4 fill-foreground" /> Remove
+                  from Starred
+                </>
+              ) : (
+                <>
+                  <StarIcon className="mr-2 size-4" /> Add to Starred
+                </>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"

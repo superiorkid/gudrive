@@ -1,7 +1,8 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
 
@@ -12,6 +13,7 @@ from app.common.exceptions import (
 )
 from app.lib.is_descendant import is_descendant
 from app.models.node import Node, NodeType
+from app.models.starred_node import StarredNode
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
 from app.services.node_query import (
@@ -88,6 +90,7 @@ async def get_nodes_service(
     folder_group: Optional[str],
     status: Optional[str],
     keyword: Optional[str],
+    scope: Optional[str],
 ):
     status = status if status else "active"
 
@@ -129,10 +132,16 @@ async def get_nodes_service(
             Node.owner_id == current_user.id,
         )
 
-    if not keyword:
-        query = query.where(Node.parent_id == parent_id)
-    elif parent_id:
-        query = query.where(Node.parent_id == parent_id)
+    if scope == "starred":
+        query = query.join(StarredNode, StarredNode.node_id == Node.id).where(
+            StarredNode.user_id == current_user.id
+        )
+
+    if scope != "starred":
+        if not keyword:
+            query = query.where(Node.parent_id == parent_id)
+        elif parent_id:
+            query = query.where(Node.parent_id == parent_id)
 
     query = query.options(joinedload(Node.parent))
 
@@ -176,8 +185,21 @@ async def get_nodes_service(
             status,
         )
 
+    is_starred_subquery = (
+        select(1)
+        .select_from(StarredNode)
+        .where(
+            StarredNode.user_id == current_user.id,
+            StarredNode.node_id == Node.id,
+        )
+        .correlate(Node)
+        .exists()
+    )
+
+    query = query.add_columns(is_starred_subquery.label("is_starred"))
+
     result = await db.execute(query)
-    nodes = result.scalars().all()
+    rows = result.all()
 
     data = [
         {
@@ -198,11 +220,12 @@ async def get_nodes_service(
             "mime_type": node.mime_type,
             "preview_url": node.preview_url,
             "preview_status": node.preview_status,
+            "is_starred": is_starred,
             "created_at": node.created_at,
             "updated_at": node.updated_at,
             "deleted_at": node.deleted_at,
         }
-        for node in nodes
+        for node, is_starred in rows
     ]
 
     return data
@@ -408,3 +431,41 @@ async def restore_node_service(
         .values(deleted_at=None)
     )
     await db.commit()
+
+
+async def toggle_star_service(db: AsyncSession, current_user: User, node_id: uuid.UUID):
+    query = select(Node).where(
+        Node.id == node_id,
+        Node.owner_id == current_user.id,
+        Node.deleted_at.is_(None),
+    )
+    result = await db.execute(query)
+    node = result.scalar_one_or_none()
+
+    if not node:
+        raise NotFoundException("Node", str(node_id))
+
+    query = select(StarredNode).where(
+        StarredNode.user_id == current_user.id, StarredNode.node_id == node_id
+    )
+    result = await db.execute(query)
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        await db.execute(
+            delete(StarredNode).where(
+                StarredNode.user_id == current_user.id, StarredNode.node_id == node_id
+            )
+        )
+        await db.commit()
+
+        return {"node_id": str(node_id), "is_starred": False}
+
+    else:
+        db.add(StarredNode(user_id=current_user.id, node_id=node_id))
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+
+        return {"node_id": str(node_id), "is_starred": True}

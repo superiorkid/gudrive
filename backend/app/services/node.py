@@ -402,6 +402,7 @@ async def update_node_service(
     await db.commit()
     await db.refresh(node)
 
+    await cache.flush_pattern(f"node:detail:user={current_user.id}:node={node_id}")
     # invalidate old folder
     await cache.flush_pattern(f"nodes:user={current_user.id}:parent={old_parent_id}:*")
     if old_parent_id != new_parent_id:

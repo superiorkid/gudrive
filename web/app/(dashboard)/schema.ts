@@ -6,3 +6,9 @@ export const createFolderSchema = z.object({
 })
 
 export type TCreateFolderSchema = z.infer<typeof createFolderSchema>
+
+export const updateNodeSchema = z.object({
+  newName: z.string().min(1),
+})
+
+export type TUpdateNodeSchema = z.infer<typeof updateNodeSchema>

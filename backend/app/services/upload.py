@@ -20,6 +20,7 @@ from app.models.node import Node, NodeType
 from app.models.upload_session import UploadSession, UploadStatus
 from app.models.user import User
 from app.schemas.upload import InitializeUploadRequest, InitializeUploadResponse
+from app.services.cache import CacheService
 from app.tasks.uploads import generate_file_preview
 
 
@@ -28,6 +29,7 @@ async def initialize_upload_service(
     db: AsyncSession,
     config: Settings,
     current_user: User,
+    cache: CacheService,
 ) -> InitializeUploadResponse:
     if payload.parent_id:
         query = select(Node).where(
@@ -104,6 +106,17 @@ async def initialize_upload_service(
 
     try:
         await db.commit()
+        await cache.set(
+            f"upload:{upload_id}",
+            {
+                "uploaded_bytes": 0,
+                "total_size": payload.total_size,
+                "status": UploadStatus.INITIATED.value,
+                "chunk_size": config.upload_chunk_size,
+                "storage_path": storage_path,
+            },
+            60 * 60 * 24,
+        )
     except IntegrityError:
         await db.rollback()
         if os.path.exists(storage_path):
@@ -116,8 +129,21 @@ async def initialize_upload_service(
 
 
 async def get_upload_status_service(
-    upload_id: uuid.UUID, db: AsyncSession, response: Response, current_user: User
+    upload_id: uuid.UUID,
+    db: AsyncSession,
+    response: Response,
+    current_user: User,
+    cache: CacheService,
 ) -> Response:
+    cached = await cache.get(f"upload:{upload_id}")
+    if cached:
+        response.headers["Upload-Offset"] = str(cached["uploaded_bytes"])
+        response.headers["Upload-Length"] = str(cached["total_size"])
+        response.headers["Upload-Status"] = cached["status"]
+        response.headers["Upload-Chunk-Size"] = str(cached["chunk_size"])
+        response.status_code = 204
+        return response
+
     query = select(UploadSession).where(
         UploadSession.id == upload_id, UploadSession.owner_id == current_user.id
     )
@@ -136,44 +162,84 @@ async def get_upload_status_service(
 
 
 async def upload_chunk_service(
-    upload_id: uuid.UUID, request: Request, db: AsyncSession, current_user: User
+    upload_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession,
+    current_user: User,
+    cache: CacheService,
 ):
-    query = select(UploadSession).where(
-        UploadSession.id == upload_id, UploadSession.owner_id == current_user.id
-    )
-    result = await db.execute(query)
-    session = result.scalar_one_or_none()
+    cache_key = f"upload:{upload_id}"
+    cached = await cache.get(cache_key)
 
-    if not session:
-        raise NotFoundException("UploadSession", str(upload_id))
+    session: UploadSession | None = None
 
-    expected = session.uploaded_bytes
+    if cached:
+        expected = cached["uploaded_bytes"]
+        total_size = cached["total_size"]
+        chunk_size = cached["chunk_size"]
+        storage_path = cached["storage_path"]
+    else:
+        query = select(UploadSession).where(
+            UploadSession.id == upload_id,
+            UploadSession.owner_id == current_user.id,
+        )
+
+        result = await db.execute(query)
+        session = result.scalar_one_or_none()
+
+        if not session:
+            raise NotFoundException("UploadSession", str(upload_id))
+
+        expected = session.uploaded_bytes
+        total_size = session.total_size
+        chunk_size = session.chunk_size
+        storage_path = session.storage_path
+
+        # warm redis cache
+        await cache.set(
+            cache_key,
+            {
+                "uploaded_bytes": expected,
+                "total_size": total_size,
+                "chunk_size": chunk_size,
+                "storage_path": storage_path,
+                "status": session.status.value,
+            },
+            ttl=60 * 60 * 24,
+        )
+
     try:
         got = int(request.headers.get("Upload-Offset", "-1"))
     except ValueError:
         raise BadRequestException(
-            "Invalid Upload-Offset header", details={"expected": expected, "got": got}
+            "Invalid Upload-Offset header",
+            details={
+                "expected": expected,
+                "got": request.headers.get("Upload-Offset"),
+            },
         )
 
     if got != expected:
-        raise AlreadyExistsException("UploadSession", "uploaded_bytes", str(expected))
+        raise AlreadyExistsException(
+            "UploadSession",
+            "uploaded_bytes",
+            str(expected),
+        )
 
     written = 0
-    try:
-        with open(session.storage_path, "r+b") as f:
-            f.seek(expected)
 
+    try:
+        with open(storage_path, "r+b") as f:
             async for chunk in request.stream():
                 if not chunk:
                     continue
 
-                # prevent overflow
-                if expected + written + len(chunk) > session.total_size:
+                if expected + written + len(chunk) > total_size:
                     raise BadRequestException(
                         "Chunk exceeds total file size",
                         details={
                             "chunk_size": expected + written + len(chunk),
-                            "total_size": session.total_size,
+                            "total_size": total_size,
                         },
                     )
 
@@ -186,15 +252,50 @@ async def upload_chunk_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    session.uploaded_bytes += written
+    new_offset = expected + written
+
+    await cache.set(
+        cache_key,
+        {
+            "uploaded_bytes": new_offset,
+            "total_size": total_size,
+            "chunk_size": chunk_size,
+            "storage_path": storage_path,
+            "status": UploadStatus.UPLOADING.value,
+        },
+        ttl=60 * 60 * 24,
+    )
+
+    # sync db
+    if session is None:
+        query = select(UploadSession).where(
+            UploadSession.id == upload_id,
+            UploadSession.owner_id == current_user.id,
+        )
+
+        result = await db.execute(query)
+        session = result.scalar_one_or_none()
+
+    if not session:
+        raise NotFoundException("UploadSession", str(upload_id))
+
+    session.uploaded_bytes = new_offset
     session.status = UploadStatus.UPLOADING
 
     await db.commit()
-    return {"received": written, "offset": session.uploaded_bytes}
+
+    return {
+        "received": written,
+        "offset": new_offset,
+    }
 
 
 async def finalize_upload_service(
-    upload_id: uuid.UUID, db: AsyncSession, config: Settings, current_user: User
+    upload_id: uuid.UUID,
+    db: AsyncSession,
+    config: Settings,
+    current_user: User,
+    cache: CacheService,
 ):
     query = select(UploadSession).where(
         UploadSession.id == upload_id, UploadSession.owner_id == current_user.id
@@ -205,7 +306,13 @@ async def finalize_upload_service(
     if not session:
         raise NotFoundException("UploadSession", str(upload_id))
 
-    if session.uploaded_bytes != session.total_size:
+    cached = await cache.get(f"upload:{upload_id}")
+    if cached:
+        uploaded_bytes = cached["uploaded_bytes"]
+    else:
+        uploaded_bytes = session.uploaded_bytes
+
+    if uploaded_bytes != session.total_size:
         raise BadRequestException(
             f"Upload Incomplete ({session.uploaded_bytes}/{session.total_size})",
             details={
@@ -254,6 +361,10 @@ async def finalize_upload_service(
     session.status = UploadStatus.COMPLETED
     await db.commit()
     await db.refresh(node)
+
+    await cache.delete(f"upload:{upload_id}")
+
+    # TODO: invalidate cache for folder
 
     generate_file_preview.delay(str(node.id))
 

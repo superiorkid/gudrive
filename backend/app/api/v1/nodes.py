@@ -4,10 +4,11 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_async_db_session, get_current_active_user
+from app.api.deps import get_async_db_session, get_cache, get_current_active_user
 from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
+from app.services.cache import CacheService
 from app.services.node import (
     create_node_service,
     delete_node_service,
@@ -26,8 +27,11 @@ async def create_node(
     payload: CreateNodeSchema,
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
 ):
-    result = await create_node_service(payload, db, current_user)
+    result = await create_node_service(
+        payload=payload, db=db, current_user=current_user, cache=cache
+    )
     return success_response(
         data={
             "id": str(result.id),
@@ -43,6 +47,7 @@ async def create_node(
 async def get_nodes(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
     parent_id: Optional[uuid.UUID] = None,
     type: Optional[str] = None,
     modified: Optional[str] = None,
@@ -65,6 +70,7 @@ async def get_nodes(
         status=status,
         keyword=keyword,
         scope=scope,
+        cache=cache,
     )
     return success_response(data=result)
 
@@ -74,8 +80,11 @@ async def detail_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     node_id: uuid.UUID,
+    cache: CacheService = Depends(get_cache),
 ):
-    result = await detail_node_service(node_id, db, current_user)
+    result = await detail_node_service(
+        node_id=node_id, db=db, current_user=current_user, cache=cache
+    )
     return success_response(data=result)
 
 
@@ -85,9 +94,11 @@ async def update_node(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     node_id: uuid.UUID,
     payload: UpdateNodeSchema,
+    cache: CacheService = Depends(get_cache),
 ):
-
-    result = await update_node_service(db, current_user, node_id, payload)
+    result = await update_node_service(
+        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
+    )
     return success_response(
         data={
             "id": str(result.id),
@@ -103,8 +114,11 @@ async def delete_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     node_id: uuid.UUID,
+    cache: CacheService = Depends(get_cache),
 ):
-    await delete_node_service(db, current_user, node_id)
+    await delete_node_service(
+        db=db, current_user=current_user, node_id=node_id, cache=cache
+    )
     return success_response(data={"ok": True})
 
 
@@ -113,8 +127,11 @@ async def restore_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     node_id: uuid.UUID,
+    cache: CacheService = Depends(get_cache),
 ):
-    await restore_node_service(db, current_user, node_id)
+    await restore_node_service(
+        db=db, current_user=current_user, node_id=node_id, cache=cache
+    )
     return success_response(data={"ok": True})
 
 
@@ -123,6 +140,9 @@ async def toggle_star(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     node_id: uuid.UUID,
+    cache: CacheService = Depends(get_cache),
 ):
-    result = await toggle_star_service(db, current_user, node_id)
+    result = await toggle_star_service(
+        db=db, current_user=current_user, node_id=node_id, cache=cache
+    )
     return success_response(data=result)

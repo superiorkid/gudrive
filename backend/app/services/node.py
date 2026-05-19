@@ -16,6 +16,7 @@ from app.models.node import Node, NodeType
 from app.models.starred_node import StarredNode
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
+from app.services.cache import CacheService
 from app.services.node_query import (
     apply_file_filter,
     apply_modified_filter,
@@ -26,7 +27,7 @@ from app.services.node_query import (
 
 
 async def create_node_service(
-    payload: CreateNodeSchema, db: AsyncSession, current_user: User
+    payload: CreateNodeSchema, db: AsyncSession, current_user: User, cache: CacheService
 ):
     name = payload.name.strip()
     if not name:
@@ -76,12 +77,25 @@ async def create_node_service(
     await db.commit()
     await db.refresh(node)
 
+    # invalidate folder listing
+    await cache.flush_pattern(
+        f"nodes:user={current_user.id}:parent={payload.parent_id}:*"
+    )
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+    # invalidate parent detail cache
+    if payload.parent_id:
+        await cache.delete(
+            f"node:detail:user={current_user.id}:node={payload.parent_id}"
+        )
+
     return node
 
 
 async def get_nodes_service(
     db: AsyncSession,
     current_user: User,
+    cache: CacheService,
     parent_id: Optional[uuid.UUID],
     type: Optional[str],
     modified: Optional[str],
@@ -94,6 +108,26 @@ async def get_nodes_service(
 ):
     status = status if status else "active"
 
+    cache_key = (
+        f"nodes:"
+        f"user={current_user.id}:"
+        f"parent={parent_id}:"
+        f"type={type}:"
+        f"modified={modified}:"
+        f"sort_by={sort_by}:"
+        f"sort_direction={sort_direction}:"
+        f"folder_group={folder_group}:"
+        f"status={status}:"
+        f"keyword={keyword}:"
+        f"scope={scope}"
+    )
+
+    cached = await cache.get(cache_key)
+    if cached is not None:
+        print("fron cache")
+        return cached
+
+    print("fron db")
     if parent_id:
         parent_query = select(Node).where(
             Node.id == parent_id,
@@ -228,14 +262,25 @@ async def get_nodes_service(
         for node, is_starred in rows
     ]
 
+    ttl = 15 if keyword else 60
+    await cache.set(
+        cache_key,
+        data,
+        ttl=ttl * 60 * 60,
+    )
+
     return data
 
 
 async def detail_node_service(
-    node_id: uuid.UUID,
-    db: AsyncSession,
-    current_user: User,
+    node_id: uuid.UUID, db: AsyncSession, current_user: User, cache: CacheService
 ):
+    cache_key = f"node:detail:" f"user={current_user.id}:" f"node={node_id}"
+
+    cached = await cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     query = select(Node).where(
         Node.id == node_id,
         Node.owner_id == current_user.id,
@@ -271,11 +316,21 @@ async def detail_node_service(
 
         response["children_count"] = children_count
 
+    await cache.set(
+        cache_key,
+        response,
+        ttl=300 * 60 * 60,
+    )
+
     return response
 
 
 async def update_node_service(
-    db: AsyncSession, current_user: User, node_id: uuid.UUID, payload: UpdateNodeSchema
+    db: AsyncSession,
+    current_user: User,
+    node_id: uuid.UUID,
+    payload: UpdateNodeSchema,
+    cache: CacheService,
 ):
     query = select(Node).where(
         Node.id == node_id,
@@ -300,7 +355,7 @@ async def update_node_service(
         payload.parent_id if payload.parent_id is not None else node.parent_id
     )
     if payload.parent_id is not None:
-        if payload.parent_id == new_parent_id:
+        if payload.parent_id == node.id:
             raise BadRequestException(
                 "Cannot move node into itself",
                 details={"new_parent_id": payload.parent_id},
@@ -342,14 +397,29 @@ async def update_node_service(
     if existing:
         raise AlreadyExistsException("Node", "name", new_name)
 
+    old_parent_id = node.parent_id
     node.name = new_name
     node.parent_id = new_parent_id
 
     await db.commit()
     await db.refresh(node)
 
+    # invalidate old folder
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={old_parent_id}:*")
+    if old_parent_id != new_parent_id:
+        # invalidate new folder
+        await cache.flush_pattern(
+            f"nodes:user={current_user.id}:parent={new_parent_id}:*"
+        )
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:keyword=*")
 
-async def delete_node_service(db: AsyncSession, current_user: User, node_id: uuid.UUID):
+    return node
+
+
+async def delete_node_service(
+    db: AsyncSession, current_user: User, node_id: uuid.UUID, cache: CacheService
+):
     query = select(Node).where(
         Node.id == node_id, Node.owner_id == current_user.id, Node.deleted_at.is_(None)
     )
@@ -358,6 +428,8 @@ async def delete_node_service(db: AsyncSession, current_user: User, node_id: uui
 
     if not node:
         raise NotFoundException("Node", str(node_id))
+
+    parent_id = node.parent_id
 
     descendants_cte = (
         select(Node.id)
@@ -375,9 +447,25 @@ async def delete_node_service(db: AsyncSession, current_user: User, node_id: uui
     )
     await db.commit()
 
+    # invalidate folder listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={parent_id}:*")
+    # invalidate trash listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*status=trashed*")
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+    # invalidate node detail
+    await cache.delete(f"node:detail:user={current_user.id}:node={node_id}")
+    # invalidate parent detail (children_count changed)
+    if parent_id:
+        await cache.delete(f"node:detail:user={current_user.id}:node={parent_id}")
+
+    return {
+        "success": True,
+    }
+
 
 async def restore_node_service(
-    db: AsyncSession, current_user: User, node_id: uuid.UUID
+    db: AsyncSession, current_user: User, node_id: uuid.UUID, cache: CacheService
 ):
     query = select(Node).where(
         Node.id == node_id,
@@ -390,7 +478,9 @@ async def restore_node_service(
     if not node:
         raise NotFoundException("Node", str(node_id))
 
-    if node.parent_id:
+    parent_id = node.parent_id
+
+    if parent_id:
         query = select(Node).where(
             Node.id == node.parent_id, Node.owner_id == current_user.id
         )
@@ -425,6 +515,10 @@ async def restore_node_service(
         select(Node.id).where(Node.parent_id == descendants_alias.c.id)
     )
 
+    # fetch descendant ids for cache invalidation
+    descendant_ids_result = await db.execute(select(descendants_cte.c.id))
+    descendant_ids = descendant_ids_result.scalars().all()
+
     await db.execute(
         update(Node)
         .where(Node.id.in_(select(descendants_cte.c.id)))
@@ -432,13 +526,34 @@ async def restore_node_service(
     )
     await db.commit()
 
+    # invalidate folder listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={parent_id}:*")
+    # invalidate trash listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*status=trashed*")
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+    # invalidate restored node details
+    for descendant_id in descendant_ids:
+        await cache.delete(f"node:detail:user={current_user.id}:node={descendant_id}")
+    # invalidate parent detail (children_count changed)
+    if parent_id:
+        await cache.delete(f"node:detail:user={current_user.id}:node={parent_id}")
 
-async def toggle_star_service(db: AsyncSession, current_user: User, node_id: uuid.UUID):
+    return {"success": True}
+
+
+async def toggle_star_service(
+    db: AsyncSession,
+    current_user: User,
+    node_id: uuid.UUID,
+    cache: CacheService,
+):
     query = select(Node).where(
         Node.id == node_id,
         Node.owner_id == current_user.id,
         Node.deleted_at.is_(None),
     )
+
     result = await db.execute(query)
     node = result.scalar_one_or_none()
 
@@ -446,26 +561,57 @@ async def toggle_star_service(db: AsyncSession, current_user: User, node_id: uui
         raise NotFoundException("Node", str(node_id))
 
     query = select(StarredNode).where(
-        StarredNode.user_id == current_user.id, StarredNode.node_id == node_id
+        StarredNode.user_id == current_user.id,
+        StarredNode.node_id == node_id,
     )
+
     result = await db.execute(query)
     existing = result.scalar_one_or_none()
+
+    is_starred = False
 
     if existing:
         await db.execute(
             delete(StarredNode).where(
-                StarredNode.user_id == current_user.id, StarredNode.node_id == node_id
+                StarredNode.user_id == current_user.id,
+                StarredNode.node_id == node_id,
             )
         )
-        await db.commit()
 
-        return {"node_id": str(node_id), "is_starred": False}
+        is_starred = False
 
     else:
-        db.add(StarredNode(user_id=current_user.id, node_id=node_id))
-        try:
-            await db.commit()
-        except IntegrityError:
-            await db.rollback()
+        db.add(
+            StarredNode(
+                user_id=current_user.id,
+                node_id=node_id,
+            )
+        )
 
-        return {"node_id": str(node_id), "is_starred": True}
+        is_starred = True
+
+    try:
+        await db.commit()
+
+    except IntegrityError:
+        await db.rollback()
+
+        raise AlreadyExistsException(
+            "StarredNode",
+            "node_id",
+            str(node_id),
+        )
+
+    # invalidate starred listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*scope=starred*")
+    # invalidate folder listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={node.parent_id}:*")
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+    # invalidate node detail
+    await cache.delete(f"node:detail:user={current_user.id}:node={node_id}")
+
+    return {
+        "node_id": str(node_id),
+        "is_starred": is_starred,
+    }

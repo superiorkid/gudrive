@@ -364,7 +364,17 @@ async def finalize_upload_service(
 
     await cache.delete(f"upload:{upload_id}")
 
-    # TODO: invalidate cache for folder
+    # invalidate folder listing
+    await cache.flush_pattern(
+        f"nodes:user={current_user.id}:parent={session.parent_id}:*"
+    )
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+    # invalidate parent detail cache (children_count changed)
+    if session.parent_id:
+        await cache.delete(
+            f"node:detail:user={current_user.id}:node={session.parent_id}"
+        )
 
     generate_file_preview.delay(str(node.id))
 

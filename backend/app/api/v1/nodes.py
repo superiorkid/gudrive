@@ -4,7 +4,12 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_async_db_session, get_cache, get_current_active_user
+from app.api.deps import (
+    get_async_db_session,
+    get_cache,
+    get_current_active_user,
+    rate_limit,
+)
 from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
@@ -22,7 +27,7 @@ from app.services.node import (
 nodes_router_v1 = APIRouter(tags=["Nodes"])
 
 
-@nodes_router_v1.post("/")
+@nodes_router_v1.post("/", dependencies=[Depends(rate_limit(limit=30, window=60))])
 async def create_node(
     payload: CreateNodeSchema,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -43,7 +48,7 @@ async def create_node(
     )
 
 
-@nodes_router_v1.get("/")
+@nodes_router_v1.get("/", dependencies=[Depends(rate_limit(limit=120, window=60))])
 async def get_nodes(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -75,7 +80,9 @@ async def get_nodes(
     return success_response(data=result)
 
 
-@nodes_router_v1.get("/{node_id}")
+@nodes_router_v1.get(
+    "/{node_id}", dependencies=[Depends(rate_limit(limit=200, window=60))]
+)
 async def detail_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -88,7 +95,9 @@ async def detail_node(
     return success_response(data=result)
 
 
-@nodes_router_v1.put("/{node_id}")
+@nodes_router_v1.put(
+    "/{node_id}", dependencies=[Depends(rate_limit(limit=60, window=60))]
+)
 async def update_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -109,7 +118,9 @@ async def update_node(
     )
 
 
-@nodes_router_v1.delete("/{node_id}")
+@nodes_router_v1.delete(
+    "/{node_id}", dependencies=[Depends(rate_limit(limit=20, window=60))]
+)
 async def delete_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -122,7 +133,9 @@ async def delete_node(
     return success_response(data={"ok": True})
 
 
-@nodes_router_v1.post("/{node_id}/restore")
+@nodes_router_v1.post(
+    "/{node_id}/restore", dependencies=[Depends(rate_limit(limit=20, window=60))]
+)
 async def restore_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -135,7 +148,9 @@ async def restore_node(
     return success_response(data={"ok": True})
 
 
-@nodes_router_v1.post("/{node_id}/starred")
+@nodes_router_v1.post(
+    "/{node_id}/starred", dependencies=[Depends(rate_limit(limit=100, window=60))]
+)
 async def toggle_star(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],

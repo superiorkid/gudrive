@@ -4,7 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_async_db_session, get_cache, get_current_active_user
+from app.api.deps import (
+    get_async_db_session,
+    get_cache,
+    get_current_active_user,
+)
 from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
@@ -34,7 +38,9 @@ async def initialize_upload(
     return success_response(data=data, message="Initialize upload successfully")
 
 
-@uploads_router_v1.head("/{upload_id}")
+@uploads_router_v1.head(
+    "/{upload_id}",
+)
 async def get_upload_status(
     upload_id: uuid.UUID,
     response: Response,

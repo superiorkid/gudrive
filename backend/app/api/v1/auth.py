@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_async_db_session, get_current_active_user
+from app.api.deps import get_async_db_session, get_current_active_user, rate_limit
 from app.common.exceptions import AlreadyExistsException
 from app.core.auth import (
     authenticate_user,
@@ -20,7 +20,7 @@ from app.schemas.user import CreateUser, UserResponse
 auth_router_v1 = APIRouter(tags=["Authentication"])
 
 
-@auth_router_v1.post("/token")
+@auth_router_v1.post("/token", dependencies=[Depends(rate_limit(5, 60))])
 async def login_for_access_token(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -54,7 +54,10 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@auth_router_v1.post("/register")
+@auth_router_v1.post(
+    "/register",
+    dependencies=[Depends(rate_limit(5, 3600))],
+)
 async def register_user(
     payload: CreateUser,
     db: AsyncSession = Depends(get_async_db_session),
@@ -86,7 +89,10 @@ async def register_user(
     return success_response(message="create user successfully")
 
 
-@auth_router_v1.post("/logout")
+@auth_router_v1.post(
+    "/logout",
+    dependencies=[Depends(rate_limit(30, 60))],
+)
 async def logout(
     response: Response,
     config: Settings = Depends(get_configs),
@@ -96,6 +102,10 @@ async def logout(
     return success_response(message="Logged out")
 
 
-@auth_router_v1.get("/me", response_model=UserResponse)
+@auth_router_v1.get(
+    "/me",
+    response_model=UserResponse,
+    dependencies=[Depends(rate_limit(120, 60))],
+)
 async def session(current_user: User = Depends(get_current_active_user)):
     return current_user

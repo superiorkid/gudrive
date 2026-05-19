@@ -124,10 +124,8 @@ async def get_nodes_service(
 
     cached = await cache.get(cache_key)
     if cached is not None:
-        print("fron cache")
         return cached
 
-    print("fron db")
     if parent_id:
         parent_query = select(Node).where(
             Node.id == parent_id,

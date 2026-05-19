@@ -73,20 +73,28 @@ async def get_cache(redis: Redis = Depends(get_redis)) -> CacheService:
     return CacheService(redis)
 
 
-def rate_limit(limit: int, window: int):
+def rate_limit(limit: int = 100, window: int = 60):
     async def dependency(
         request: Request,
         redis: Redis = Depends(get_redis),
     ):
         limiter = RateLimiter(redis)
         client_ip = request.client.host if request.client else "unknown"
-
-        result = await limiter.check_rate_limit(f"api:{client_ip}", limit, window)
+        result = await limiter.check_rate_limit(
+            identifier=f"api:{client_ip}",
+            limit=limit,
+            window=window,
+        )
 
         if not result["allowed"]:
             raise HTTPException(
                 status_code=429,
                 detail="Rate limit exceeded",
+                headers={
+                    "X-RateLimit-Limit": str(result["limit"]),
+                    "X-RateLimit-Remaining": str(result["remaining"]),
+                    "X-RateLimit-Reset": str(result["reset"]),
+                },
             )
 
         return result

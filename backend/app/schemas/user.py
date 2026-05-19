@@ -1,4 +1,5 @@
 from typing import Self
+from uuid import UUID
 
 from pydantic import BaseModel, model_validator
 
@@ -14,3 +15,13 @@ class CreateUser(BaseModel):
         if self.password != self.confirm_password:
             raise ValueError("Password does not match")
         return self
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    username: str
+    is_verified: bool
+
+    class Config:
+        from_attributes = True

@@ -31,3 +31,8 @@ export const nodeKeys = {
   details: () => [...nodeKeys.base, "detail"] as const,
   detail: (id: string) => [...nodeKeys.details(), id] as const,
 }
+
+export const authKeys = {
+  base: ["auth"] as const,
+  session: () => [...authKeys.base, "session"] as const,
+}

@@ -1,8 +1,5 @@
 "use client"
 
-import { CommandIcon, PlusIcon } from "lucide-react"
-import * as React from "react"
-
 import NodeActionMenu from "@/app/_components/node-action-menu"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -18,18 +15,11 @@ import {
 } from "@/components/ui/sidebar"
 import { useSideMenu } from "@/hooks/use-side-menu"
 import { cn } from "@/lib/utils"
+import { CommandIcon, PlusIcon } from "lucide-react"
 import Link from "next/link"
+import * as React from "react"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
-
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "https://avatars.githubusercontent.com/u/124599?v=4",
-  },
-}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
@@ -85,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

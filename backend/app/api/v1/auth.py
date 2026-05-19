@@ -15,7 +15,7 @@ from app.core.auth import (
 from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
-from app.schemas.user import CreateUser
+from app.schemas.user import CreateUser, UserResponse
 
 auth_router_v1 = APIRouter(tags=["Authentication"])
 
@@ -90,11 +90,12 @@ async def register_user(
 async def logout(
     response: Response,
     config: Settings = Depends(get_configs),
+    _: User = Depends(get_current_active_user),
 ):
     response.delete_cookie(key=config.access_token_key, path="/")
     return success_response(message="Logged out")
 
 
-@auth_router_v1.get("/protected")
-async def protected_route(current_user: User = Depends(get_current_active_user)):
-    return {"message": f"Hello {current_user.username}, this is a protected route!"}
+@auth_router_v1.get("/me", response_model=UserResponse)
+async def session(current_user: User = Depends(get_current_active_user)):
+    return current_user

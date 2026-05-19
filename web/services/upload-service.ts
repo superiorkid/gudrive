@@ -1,4 +1,4 @@
-import axiosInstance from "@/lib/axios"
+import { createAxiosInstance } from "@/lib/axios"
 import { ApiResponse } from "@/types/api-response-type"
 import axios, { AxiosError } from "axios"
 
@@ -8,6 +8,7 @@ export async function initializeUpload(params: {
   fileSize: number
   mimeType: string
 }) {
+  const axiosInstance = await createAxiosInstance()
   try {
     const response = await axiosInstance.post("/v1/uploads/initialize", {
       parent_id: params.folderId,
@@ -39,6 +40,8 @@ export async function uploadChunk(params: {
   offset: number
   signal?: AbortSignal
 }) {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.put(
       `/v1/uploads/${params.uploadId}/chunks`,
@@ -67,6 +70,8 @@ export async function uploadChunk(params: {
 }
 
 export async function getUploadOffset(params: { uploadId: string }) {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.head(`/v1/uploads/${params.uploadId}`)
     return response
@@ -85,6 +90,8 @@ export async function getUploadOffset(params: { uploadId: string }) {
 }
 
 export async function completeUpload(params: { uploadId: string }) {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     await axiosInstance.post(`/v1/uploads/${params.uploadId}/complete`)
   } catch (error) {

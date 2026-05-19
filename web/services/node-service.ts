@@ -1,9 +1,11 @@
-import axiosInstance from "@/lib/axios"
+import { createAxiosInstance } from "@/lib/axios"
 import { ApiResponse } from "@/types/api-response-type"
 import { TNode } from "@/types/node-type"
 import axios, { AxiosError } from "axios"
 
 export const fetchNodeDetail = async (id: string) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.get(`/v1/nodes/${id}`)
     return response.data as ApiResponse<TNode>
@@ -41,6 +43,8 @@ export const fetchNodes = async (
     scope: "normal",
   }
 ) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.get("/v1/nodes", {
       params: {
@@ -75,6 +79,8 @@ export const createNode = async (params: {
   name: string
   parentId?: string
 }) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.post("/v1/nodes", {
       name: params.name,
@@ -103,6 +109,8 @@ export const createNode = async (params: {
 }
 
 export const deleteNode = async (nodeId: string) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.delete(`/v1/nodes/${nodeId}`)
     return response.data as ApiResponse<{ ok: boolean }>
@@ -122,6 +130,8 @@ export const deleteNode = async (nodeId: string) => {
 }
 
 export const restoreNode = async (nodeId: string) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.post(`/v1/nodes/${nodeId}/restore`)
     return response.data as ApiResponse<{ ok: boolean }>
@@ -141,6 +151,8 @@ export const restoreNode = async (nodeId: string) => {
 }
 
 export const toggleStar = async (nodeId: string) => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.post(`/v1/nodes/${nodeId}/starred`)
     return response.data as ApiResponse<{

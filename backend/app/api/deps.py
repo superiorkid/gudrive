@@ -1,12 +1,12 @@
 from typing import AsyncGenerator
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from jose import jwt
 from jose.exceptions import JWTError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_user, oauth2_scheme
+from app.core.auth import get_user
 from app.core.config import Settings, get_configs
 from app.core.redis import redis_client
 from app.database import async_session_maker
@@ -22,26 +22,40 @@ async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_current_user(
     db: AsyncSession = Depends(get_async_db_session),
-    token: str = Depends(oauth2_scheme),
+    access_token: str | None = Cookie(
+        default=None,
+        alias="access-token",
+    ),
     config: Settings = Depends(get_configs),
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
 
+    if not access_token:
+        raise credentials_exception
+
     try:
-        payload = jwt.decode(token, config.secret_key, algorithms=[config.algorithm])
-        email: str = payload.get("sub")
+        payload = jwt.decode(
+            access_token,
+            config.secret_key,
+            algorithms=[config.algorithm],
+        )
+
+        email: str | None = payload.get("sub")
         if email is None:
             raise credentials_exception
-    except JWTError:
+
+    except JWTError as e:
+        print("JWT ERROR:", e)
         raise credentials_exception
 
     user = await get_user(db, email)
+
     if user is None:
         raise credentials_exception
+
     return user
 
 

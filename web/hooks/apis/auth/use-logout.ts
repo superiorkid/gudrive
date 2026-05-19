@@ -11,8 +11,9 @@ export function useLogout() {
     onError() {
       toast.error("Logged out failed")
     },
-    onSuccess() {
+    onSuccess(_data, _variables, _onMutateResult, context) {
       toast.success("Logged out successful")
+      context.client.clear()
       replace("/enter")
     },
   })

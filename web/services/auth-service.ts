@@ -1,10 +1,12 @@
 import { LoginSchema } from "@/app/(auth)/enter/schema"
 import { RegisterSchema } from "@/app/(auth)/register/schema"
-import axiosInstance from "@/lib/axios"
+import { createAxiosInstance } from "@/lib/axios"
 import { ApiResponse } from "@/types/api-response-type"
 import axios, { AxiosError } from "axios"
 
 export const register = async (payload: RegisterSchema) => {
+  const axiosInstance = await createAxiosInstance()
+
   const { confirmPassword, ...rest } = payload
   try {
     const response = await axiosInstance.post(`/v1/auth/register`, {
@@ -28,6 +30,8 @@ export const register = async (payload: RegisterSchema) => {
 }
 
 export const login = async (payload: LoginSchema) => {
+  const axiosInstance = await createAxiosInstance()
+
   const formData = new URLSearchParams()
   formData.append("username", payload.email)
   formData.append("password", payload.password)
@@ -58,6 +62,8 @@ export const login = async (payload: LoginSchema) => {
 }
 
 export const logout = async () => {
+  const axiosInstance = await createAxiosInstance()
+
   try {
     const response = await axiosInstance.post(`/v1/auth/logout`)
     return response.data as ApiResponse<null>

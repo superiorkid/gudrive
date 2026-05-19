@@ -17,7 +17,6 @@ import { useCompleteUpload } from "@/hooks/apis/uploads/use-complete-upload"
 import { useInitUpload } from "@/hooks/apis/uploads/use-init-upload"
 import { useUploadChunk } from "@/hooks/apis/uploads/use-upload-chunk"
 import { useUploadOffset } from "@/hooks/apis/uploads/use-upload-offset"
-import axiosInstance from "@/lib/axios"
 import axios from "axios"
 import { PauseIcon, PlayIcon, XIcon } from "lucide-react"
 import { useParams } from "next/navigation"
@@ -186,9 +185,7 @@ const FileUploads = ({ children }: Props) => {
     if (control.status === "uploading") return
 
     try {
-      const headRes = await axiosInstance.head(
-        `/v1/uploads/${control.uploadId}`
-      )
+      const headRes = await getOffset(control.uploadId as string)
 
       control.offset = Number(headRes.headers["upload-offset"] || 0)
       control.status = "uploading"

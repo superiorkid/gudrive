@@ -1,4 +1,5 @@
 import AppContainer from "@/components/container"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Stat,
   StatIndicator,
@@ -15,6 +16,7 @@ import {
   UploadCloudIcon,
   VideoIcon,
 } from "lucide-react"
+import { Suspense } from "react"
 import AppSearch from "../../_components/app-search"
 
 const DriveHomePage = () => {
@@ -23,7 +25,11 @@ const DriveHomePage = () => {
       <div className="mx-auto max-w-xl space-y-4 pt-28 pb-10">
         <h1 className="text-center text-3xl font-semibold">Welcome to Drive</h1>
 
-        <AppSearch />
+        <Suspense
+          fallback={<Skeleton className="h-10 max-w-md 2xl:max-w-xl" />}
+        >
+          <AppSearch />
+        </Suspense>
       </div>
       <AppContainer className="grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4 2xl:max-w-6xl">
         <Stat>

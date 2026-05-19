@@ -29,6 +29,7 @@ export async function initializeUpload(params: {
     } else {
       console.error("Unexpected Error:", error)
     }
+    throw error
   }
 }
 
@@ -61,6 +62,7 @@ export async function uploadChunk(params: {
     } else {
       console.error("Unexpected Error:", error)
     }
+    throw error
   }
 }
 
@@ -78,6 +80,7 @@ export async function getUploadOffset(params: { uploadId: string }) {
     } else {
       console.error("Unexpected Error:", error)
     }
+    throw error
   }
 }
 
@@ -94,5 +97,7 @@ export async function completeUpload(params: { uploadId: string }) {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }

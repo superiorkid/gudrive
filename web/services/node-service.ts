@@ -17,6 +17,8 @@ export const fetchNodeDetail = async (id: string) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -95,6 +97,8 @@ export const createNode = async (params: {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -112,6 +116,8 @@ export const deleteNode = async (nodeId: string) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -129,6 +135,8 @@ export const restoreNode = async (nodeId: string) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -149,5 +157,7 @@ export const toggleStar = async (nodeId: string) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }

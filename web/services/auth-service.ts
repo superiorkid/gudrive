@@ -22,6 +22,8 @@ export const register = async (payload: RegisterSchema) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -50,6 +52,8 @@ export const login = async (payload: LoginSchema) => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 
@@ -67,5 +71,7 @@ export const logout = async () => {
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }

@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useLogout } from "@/hooks/apis/auth/use-logout"
 
 export function NavUser({
   user,
@@ -36,6 +37,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { mutate: logoutMutation, isPending: logoutPending } = useLogout()
 
   return (
     <SidebarMenu>
@@ -98,7 +100,10 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => logoutMutation()}
+              disabled={logoutPending}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

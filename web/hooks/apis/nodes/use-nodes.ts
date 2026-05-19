@@ -49,11 +49,12 @@ export const useNodes = (
       if (!res) return false
       if (!rest.debounceKeyword) return false
 
-      const hasProcessing = res.data.some(
-        (node) =>
-          node.preview_status === "processing" ||
-          node.preview_status === "pending"
-      )
+      const hasProcessing =
+        res?.data?.some(
+          (node) =>
+            node.preview_status === "processing" ||
+            node.preview_status === "pending"
+        ) ?? false
 
       return hasProcessing ? 2000 : false
     },

@@ -5,7 +5,7 @@ import axios, { AxiosError } from "axios"
 
 export const fetchNodeDetail = async (id: string) => {
   try {
-    const response = await axiosInstance(`/v1/nodes/${id}`)
+    const response = await axiosInstance.get(`/v1/nodes/${id}`)
     return response.data as ApiResponse<TNode>
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
@@ -40,7 +40,7 @@ export const fetchNodes = async (
   }
 ) => {
   try {
-    const response = await axiosInstance("/v1/nodes", {
+    const response = await axiosInstance.get("/v1/nodes", {
       params: {
         ...(params.parentId && { parent_id: params.parentId }),
         ...(params.type && { type: params.type }),
@@ -60,10 +60,12 @@ export const fetchNodes = async (
       console.error("API Error Status:", axiosError.response?.status)
       console.error("Server Data:", axiosError.response?.data)
     } else if (error instanceof Error) {
-      console.error("Native Erro:", error.message)
+      console.error("Native Error:", error.message)
     } else {
       console.error("Unexpected Error:", error)
     }
+
+    throw error
   }
 }
 

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,7 @@ auth_router_v1 = APIRouter(tags=["Authentication"])
 
 @auth_router_v1.post("/token")
 async def login_for_access_token(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_async_db_session),
     config: Settings = Depends(get_configs),
@@ -40,6 +41,16 @@ async def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=acces_token_expires
     )
+    response.set_cookie(
+        key=config.access_token_key,
+        value=access_token,
+        httponly=True,
+        secure=config.app_env == "prod",
+        samesite="lax",
+        max_age=config.access_token_expire_minutes * 60,
+        path="/",
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -73,6 +84,15 @@ async def register_user(
     await db.commit()
     await db.refresh(new_user)
     return success_response(message="create user successfully")
+
+
+@auth_router_v1.post("/logout")
+async def logout(
+    response: Response,
+    config: Settings = Depends(get_configs),
+):
+    response.delete_cookie(key=config.access_token_key, path="/")
+    return success_response(message="Logged out")
 
 
 @auth_router_v1.get("/protected")

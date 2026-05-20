@@ -1,6 +1,6 @@
-# KandangData
+# GuDrive
 
-KandangData is a cloud storage application inspired by Google Drive, built with a modern full-stack architecture using FastAPI, PostgreSQL, Redis, Celery, and Next.js.
+GuDrive is a cloud storage application inspired by Google Drive, built with a modern full-stack architecture using FastAPI, PostgreSQL, Redis, Celery, and Next.js.
 
 The project focuses on scalable file management, chunked uploads, background processing, caching strategies, and production-style backend architecture.
 

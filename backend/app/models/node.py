@@ -26,12 +26,12 @@ from app.database import Base
 from app.models.mixins import TimestampMixin
 
 
-class NodeType(enum.Enum):
+class NodeType(str, enum.Enum):
     FILE = "file"
     FOLDER = "folder"
 
 
-class PreviewStatus(enum.Enum):
+class PreviewStatus(str, enum.Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     READY = "ready"

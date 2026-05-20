@@ -112,7 +112,7 @@ const NodeCard = ({
                     className="object-cover"
                     quality={80}
                     decoding="async"
-                    loading="lazy"
+                    loading="eager"
                   />
                 ) : node.preview_status === "processing" ? (
                   <div className="flex h-full w-full animate-pulse items-center justify-center bg-muted">

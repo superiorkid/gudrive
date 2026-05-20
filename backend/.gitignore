@@ -12,6 +12,4 @@ wheels/
 .env
 
 
-/tmp
-/file-upload-storage
-/thumbnails
+/data

@@ -15,7 +15,7 @@ def create_application() -> FastAPI:
     cors_middleware(application)
 
     application.mount(
-        "/thumbnails", StaticFiles(directory="thumbnails"), name="thumbnails"
+        "/data/thumbnails", StaticFiles(directory="data/thumbnails"), name="thumbnails"
     )
 
     application.include_router(api_router, prefix="/api/v1")

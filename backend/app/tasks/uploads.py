@@ -22,9 +22,12 @@ def generate_file_preview(node_id: str):
 
 async def _generate_file_preview(node_id: str):
     import app.models
+    from app.core.config import get_configs
     from app.core.redis import redis_client
     from app.models.node import Node, PreviewStatus
     from app.services.cache import CacheService
+
+    config = get_configs()
 
     redis = await redis_client.client
     cache = CacheService(redis)
@@ -67,7 +70,7 @@ async def _generate_file_preview(node_id: str):
                     "reason": "unsupported type",
                 }
 
-            output_path = f"thumbnails/{node.id}.jpg"
+            output_path = f"{config.upload_thumbnail_dir}/{node.id}.jpg"
 
             process_result = processor.process(
                 node.storage_path,

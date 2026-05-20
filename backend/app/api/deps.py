@@ -76,12 +76,21 @@ async def get_cache(redis: Redis = Depends(get_redis)) -> CacheService:
 def rate_limit(limit: int = 100, window: int = 60):
     async def dependency(
         request: Request,
-        redis: Redis = Depends(get_redis),
+        redis=Depends(get_redis),
     ):
         limiter = RateLimiter(redis)
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = request.headers.get("x-forwarded-for")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+
+        # Unique identifier per IP + HTTP Method + Route Path
+        # e.g., "123.456.7.8:POST:/api/v1/auth/register"
+        endpoint_identifier = f"{client_ip}:{request.method}:{request.url.path}"
+
         result = await limiter.check_rate_limit(
-            identifier=f"api:{client_ip}",
+            identifier=endpoint_identifier,
             limit=limit,
             window=window,
         )
@@ -89,7 +98,7 @@ def rate_limit(limit: int = 100, window: int = 60):
         if not result["allowed"]:
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded",
+                detail="Rate limit exceeded. Please try again later.",
                 headers={
                     "X-RateLimit-Limit": str(result["limit"]),
                     "X-RateLimit-Remaining": str(result["remaining"]),

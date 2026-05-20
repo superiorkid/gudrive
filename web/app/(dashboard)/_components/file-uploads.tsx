@@ -54,7 +54,11 @@ const FileUploads = ({ children }: Props) => {
 
   const { mutateAsync: initUpload } = useInitUpload()
   const { mutateAsync: uploadChunk } = useUploadChunk()
-  const { mutateAsync: completeUpload } = useCompleteUpload()
+  const { mutateAsync: completeUpload } = useCompleteUpload({
+    onSuccess: () => {
+      setFiles([])
+    },
+  })
   const { mutateAsync: getOffset } = useUploadOffset()
 
   const syncState = (key: string, control: UploadControl) => {
@@ -272,7 +276,7 @@ const FileUploads = ({ children }: Props) => {
             )
           })}
         </FileUploadList>
-      </FileUpload>
+      </FileUploadDropzone>
 
       <div className="pointer-events-none relative z-10 w-full">
         <div className="pointer-events-auto">{children}</div>

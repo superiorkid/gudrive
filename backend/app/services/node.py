@@ -601,6 +601,7 @@ async def toggle_star_service(
             str(node_id),
         )
 
+    await cache.delete(f"statistics:user={current_user.id}")
     # invalidate starred listing
     await cache.flush_pattern(f"nodes:user={current_user.id}:*scope=starred*")
     # invalidate folder listing

@@ -1,4 +1,4 @@
-import { nodeKeys } from "@/lib/query-keys"
+import { nodeKeys, statKeys } from "@/lib/query-keys"
 import { toggleStar } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -24,6 +24,7 @@ export function useToggleStar(isStarred: boolean) {
         }
       )
       context.client.invalidateQueries({ queryKey: nodeKeys.lists() })
+      context.client.invalidateQueries({ queryKey: statKeys.overview() })
     },
   })
 }

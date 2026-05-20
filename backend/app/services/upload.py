@@ -363,7 +363,7 @@ async def finalize_upload_service(
     await db.refresh(node)
 
     await cache.delete(f"upload:{upload_id}")
-
+    await cache.delete(f"statistics:user={current_user.id}")
     # invalidate folder listing
     await cache.flush_pattern(
         f"nodes:user={current_user.id}:parent={session.parent_id}:*"

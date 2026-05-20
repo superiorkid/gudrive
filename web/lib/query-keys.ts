@@ -36,3 +36,8 @@ export const authKeys = {
   base: ["auth"] as const,
   session: () => [...authKeys.base, "session"] as const,
 }
+
+export const statKeys = {
+  base: ["stats"] as const,
+  overview: () => [...statKeys.base, "statistics"] as const,
+}

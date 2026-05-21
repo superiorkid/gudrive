@@ -1,10 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import React, { Suspense } from "react"
-import AppContext from "../../_components/app-context"
 import AppBreadcrumb from "../_components/app-breadcrumb"
 import AppSearch from "../_components/app-search"
 import NodeDisplaySwitcher from "../_components/node-display-switcher"
 import NodeFilters from "../_components/node-filters"
+import AppContext from "../../_components/app-context"
 
 type Props = {
   children: React.ReactNode
@@ -51,7 +51,8 @@ const DriveLayout = ({ children }: Props) => {
           >
             <NodeFilters />
           </Suspense>
-          <AppContext>{children}</AppContext>
+          {children}
+          {/* <AppContext>{children}</AppContext> */}
         </div>
       </div>
     </main>

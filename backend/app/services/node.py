@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import Optional
 
@@ -8,6 +9,7 @@ from sqlalchemy.orm import aliased, joinedload
 
 from app.common.exceptions import (
     AlreadyExistsException,
+    AppException,
     BadRequestException,
     NotFoundException,
 )
@@ -614,4 +616,84 @@ async def toggle_star_service(
     return {
         "node_id": str(node_id),
         "is_starred": is_starred,
+    }
+
+
+async def force_delete_service(
+    current_user: User, db: AsyncSession, node_id: uuid.UUID, cache: CacheService
+):
+    query = select(Node).where(
+        Node.id == node_id,
+        Node.deleted_at.is_not(None),
+        Node.owner_id == current_user.id,
+    )
+    result = await db.execute(query)
+    node = result.scalar_one_or_none()
+
+    nodes_to_delete: list[Node] = []
+
+    if not node:
+        raise NotFoundException("Node", str(node_id))
+
+    if node.type == NodeType.FOLDER:
+        # recursive get all descendant
+        descendants_cte = (
+            select(Node)
+            .where(Node.parent_id == node.id, Node.owner_id == current_user.id)
+            .cte(name="descendants", recursive=True)
+        )
+        descendants_alias = descendants_cte.alias()
+        descendants_cte = descendants_cte.union_all(
+            select(Node).where(
+                Node.parent_id == descendants_alias.c.id,
+                Node.owner_id == current_user.id,
+            )
+        )
+        descendants_result = await db.execute(
+            select(Node).join(descendants_cte, Node.id == descendants_cte.c.id)
+        )
+        descendants = descendants_result.scalars().all()
+        nodes_to_delete.extend(descendants)
+
+    nodes_to_delete.append(node)
+
+    for item in nodes_to_delete:
+        if item.type != NodeType.FILE:
+            continue
+
+        if not item.storage_path:
+            continue
+
+        try:
+            if os.path.exists(item.storage_path):
+                os.remove(item.storage_path)
+        except OSError as e:
+            raise AppException(
+                error_code="FILE_DELETE_FAILED",
+                message=f"Failed to delete file: {str(e)}",
+                details={
+                    "node_id": str(item.id),
+                    "path": item.storage_path,
+                },
+            )
+
+        if item.preview_url:
+            try:
+                if os.path.exists(item.preview_url):
+                    os.remove(item.preview_url)
+            except OSError:
+                pass
+
+    for item in nodes_to_delete:
+        await db.delete(item)
+
+    await db.commit()
+
+    await cache.delete(f"statistics:user={current_user.id}")
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*")
+    await cache.flush_pattern(f"node:detail:user={current_user.id}:*")
+
+    return {
+        "deleted": len(nodes_to_delete),
+        "node_id": str(node.id),
     }

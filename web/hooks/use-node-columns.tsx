@@ -12,6 +12,7 @@ import { useRestoreNode } from "./apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "./apis/nodes/use-soft-delete-node"
 import { useToggleStar } from "./apis/nodes/use-toggle-star"
 import { useSortBy } from "./use-sort-by"
+import { useForceDeleteNode } from "./apis/nodes/use-force-delete-node"
 
 type TableVariant = "default" | "trash" | "starred"
 
@@ -105,6 +106,8 @@ function ActionRow({
     useSoftDeleteNode()
   const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
     useRestoreNode()
+  const { mutate: forceDeleteMutation, isPending: forceDeletePending } =
+    useForceDeleteNode()
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
     useToggleStar(isStarred)
@@ -130,6 +133,8 @@ function ActionRow({
         isStarred={isStarred}
         toggleStarMutation={toggleStarMutation}
         toggleStarPending={toggleStarPending}
+        forceDeleteMutation={forceDeleteMutation}
+        forceDeleteNodePending={forceDeletePending}
       >
         <Button
           variant="ghost"

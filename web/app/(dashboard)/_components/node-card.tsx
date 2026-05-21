@@ -18,6 +18,7 @@ import {
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import NodeActionDropdown from "./node-action-dropdown"
+import { useForceDeleteNode } from "@/hooks/apis/nodes/use-force-delete-node"
 
 type Props = {
   node: TNode
@@ -45,6 +46,8 @@ const NodeCard = ({
     useSoftDeleteNode()
   const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
     useRestoreNode()
+  const { mutate: forceDeleteMutation, isPending: forceDeletePending } =
+    useForceDeleteNode()
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
     useToggleStar(isStarred)
@@ -80,11 +83,15 @@ const NodeCard = ({
               isStarred={isStarred}
               toggleStarMutation={toggleStarMutation}
               toggleStarPending={toggleStarPending}
+              forceDeleteMutation={forceDeleteMutation}
+              forceDeleteNodePending={forceDeletePending}
             >
               <Button
                 variant="ghost"
                 className="size-8 p-0"
-                disabled={pendingSoftDelete || restoreNodePending}
+                disabled={
+                  pendingSoftDelete || restoreNodePending || forceDeletePending
+                }
               >
                 <span className="sr-only">Open menu</span>
                 <MoreHorizontalIcon className="size-4" />

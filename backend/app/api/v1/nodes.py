@@ -10,6 +10,7 @@ from app.api.deps import (
     get_current_active_user,
     rate_limit,
 )
+from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
@@ -18,6 +19,7 @@ from app.services.node import (
     create_node_service,
     delete_node_service,
     detail_node_service,
+    force_delete_service,
     get_nodes_service,
     restore_node_service,
     toggle_star_service,
@@ -159,5 +161,19 @@ async def toggle_star(
 ):
     result = await toggle_star_service(
         db=db, current_user=current_user, node_id=node_id, cache=cache
+    )
+    return success_response(data=result)
+
+
+@nodes_router_v1.delete("/{node_id}/force")
+async def force_delete(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    config: Annotated[Settings, Depends(get_configs)],
+    node_id: uuid.UUID,
+    cache: CacheService = Depends(get_cache),
+):
+    result = await force_delete_service(
+        current_user=current_user, db=db, node_id=node_id, cache=cache
     )
     return success_response(data=result)

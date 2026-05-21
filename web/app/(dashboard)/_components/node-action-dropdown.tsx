@@ -1,8 +1,12 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -11,10 +15,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { DownloadIcon, PencilIcon, StarIcon, TrashIcon } from "lucide-react"
+import {
+  DownloadIcon,
+  PencilIcon,
+  StarIcon,
+  TimerResetIcon,
+  TrashIcon,
+  XCircleIcon,
+} from "lucide-react"
 import React, { useState } from "react"
 import RenameNodeForm from "./rename-node-form"
 
@@ -29,6 +39,13 @@ type Props = {
   isStarred: boolean
   toggleStarPending: boolean
   toggleStarMutation: (nodeId: string) => void
+  forceDeleteNodePending: boolean
+  forceDeleteMutation: (nodeId: string) => void
+}
+
+enum Dialogs {
+  renameDialog = "renameDialog",
+  forceDeleteDialog = "forceDeleteDialog",
 }
 
 const NodeActionDropdown = ({
@@ -42,75 +59,126 @@ const NodeActionDropdown = ({
   isStarred,
   toggleStarMutation,
   toggleStarPending,
+  forceDeleteMutation,
+  forceDeleteNodePending,
 }: Props) => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
+  const [dialog, setDialog] = useState<Dialogs | null>(null)
 
   return (
-    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+    <Dialog>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+        <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="min-w-44">
           {isTrashPage ? (
             <>
               <DropdownMenuItem
-                onClick={() => restoreNodeMutation(nodeId)}
                 disabled={restoreNodePending}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  restoreNodeMutation(nodeId)
+                }}
               >
+                <TimerResetIcon className="mr-2 size-4" />
                 Restore Item
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                Delete Permanently
-              </DropdownMenuItem>
+
+              <DialogTrigger asChild>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setDialog(Dialogs.forceDeleteDialog)
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <XCircleIcon className="mr-2 size-4" />
+                  Delete Forever
+                </DropdownMenuItem>
+              </DialogTrigger>
             </>
           ) : (
             <>
               <DropdownMenuItem>
-                <DownloadIcon className="mr-2 size-4" /> Download
+                <DownloadIcon className="mr-2 size-4" />
+                Download
               </DropdownMenuItem>
+
               <DialogTrigger asChild>
-                <DropdownMenuItem>
-                  <PencilIcon className="mr-2 size-4" /> Rename
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setDialog(Dialogs.renameDialog)
+                  }}
+                >
+                  <PencilIcon className="mr-2 size-4" />
+                  Rename
                 </DropdownMenuItem>
               </DialogTrigger>
-              <DropdownMenuSeparator />
+
               <DropdownMenuItem
-                onClick={() => toggleStarMutation(nodeId)}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  toggleStarMutation(nodeId)
+                }}
                 disabled={toggleStarPending}
               >
                 {isStarred ? (
                   <>
-                    <StarIcon className="mr-2 size-4 fill-foreground" /> Remove
-                    from Starred
+                    <StarIcon className="mr-2 size-4 fill-foreground" />
+                    Remove from Starred
                   </>
                 ) : (
                   <>
-                    <StarIcon className="mr-2 size-4" /> Add to Starred
+                    <StarIcon className="mr-2 size-4" />
+                    Add to Starred
                   </>
                 )}
               </DropdownMenuItem>
+
               <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => softDeleteMutation(nodeId)}
+                className="text-destructive hover:text-destructive"
                 disabled={softDeleteNodePending}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  softDeleteMutation(nodeId)
+                }}
               >
-                <TrashIcon className="mr-2 size-4" /> Move to Trash
+                <TrashIcon className="mr-2 size-4" />
+                Move to Trash
               </DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rename</DialogTitle>
-        </DialogHeader>
-        <RenameNodeForm
-          nodeId={nodeId}
-          onUpdateSuccess={() => {
-            setOpenDialog(false)
-          }}
-        />
+        {dialog === Dialogs.renameDialog ? (
+          <RenameNodeForm nodeId={nodeId} />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Delete Forever?</DialogTitle>
+              <DialogDescription>
+                This File/Folder will be deleted forever. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Close
+                </Button>
+              </DialogClose>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => forceDeleteMutation(nodeId)}
+                disabled={forceDeleteNodePending}
+              >
+                Delete Forever
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

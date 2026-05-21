@@ -205,3 +205,24 @@ export const updateNode = async (params: {
     throw error
   }
 }
+
+export const forceDelete = async (nodeId: string) => {
+  const axiosInstance = await createAxiosInstance()
+
+  try {
+    const response = await axiosInstance.delete(`/v1/nodes/${nodeId}/force`)
+    return response.data as ApiResponse<{ deleted: number; node_id: string }>
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+      console.error("API Error Status:", axiosError.response?.status)
+      console.error("Server Data:", axiosError.response?.data)
+    } else if (error instanceof Error) {
+      console.error("Native Erro:", error.message)
+    } else {
+      console.error("Unexpected Error:", error)
+    }
+
+    throw error
+  }
+}

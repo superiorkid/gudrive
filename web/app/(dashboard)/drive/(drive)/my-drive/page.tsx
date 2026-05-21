@@ -5,6 +5,7 @@ import { fetchNodes } from "@/services/node-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { Suspense } from "react"
 import MyDrivePage from "./_components/my-drive-page"
+import AppContext from "@/app/(dashboard)/_components/app-context"
 
 type Props = {
   searchParams: Promise<{
@@ -48,7 +49,9 @@ const Page = async ({ searchParams }: Props) => {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <Suspense fallback={<Skeleton className="h-8 w-36" />}>
-        <MyDrivePage />
+        <AppContext>
+          <MyDrivePage />
+        </AppContext>
       </Suspense>
     </HydrationBoundary>
   )

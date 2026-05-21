@@ -9,12 +9,14 @@ The project focuses on scalable file management, chunked uploads, background pro
 ## Features
 
 ### Authentication
+
 - JWT Authentication
 - Secure HTTP-only cookies
 - Authentication middleware & protected routes
 - Refresh token support is planned but not implemented yet
 
 ### File & Folder Management
+
 - Create folders
 - Rename files/folders
 - Recursive soft delete
@@ -24,6 +26,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Duplicate filename prevention in the same folder
 
 ### Upload System
+
 - Chunked uploads
 - Upload session tracking
 - Upload offset validation
@@ -33,6 +36,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Upload integrity validation
 
 ### File Preview System
+
 - Background preview generation using Celery
 - Image thumbnail generation
 - PDF thumbnail generation
@@ -40,6 +44,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Preview status tracking
 
 ### Search & Filtering
+
 - PostgreSQL full-text search
 - File type filtering
 - Modified date filtering
@@ -48,6 +53,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Starred scope filtering
 
 ### Performance & Caching
+
 - Redis cache layer
 - Cache-aside strategy
 - Smart cache invalidation
@@ -57,6 +63,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Search cache invalidation
 
 ### Frontend
+
 - Next.js App Router
 - Tanstack Query
 - Nuqs state management
@@ -69,6 +76,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 ## Tech Stack
 
 ### Backend
+
 - FastAPI
 - SQLAlchemy
 - PostgreSQL
@@ -78,6 +86,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - pypdfium2
 
 ### Frontend
+
 - Next.js
 - TypeScript
 - TailwindCSS
@@ -86,6 +95,7 @@ The project focuses on scalable file management, chunked uploads, background pro
 - Zod
 
 ### Infrastructure
+
 - Docker
 - Redis
 - Celery Workers
@@ -95,9 +105,11 @@ The project focuses on scalable file management, chunked uploads, background pro
 ## Current Architecture Highlights
 
 ### Chunk Upload Architecture
+
 The upload system is designed similarly to resumable upload systems used by cloud storage providers.
 
 Flow:
+
 1. Initialize upload session
 2. Upload file chunks
 3. Track upload offset
@@ -105,13 +117,16 @@ Flow:
 5. Background preview generation
 
 ### Caching Strategy
+
 The application uses Redis with cache invalidation patterns:
+
 - Folder listing cache
 - Node detail cache
 - Upload progress cache
 - Search cache
 
 Caches are invalidated automatically after:
+
 - Upload completion
 - Rename operations
 - Delete/restore actions
@@ -119,7 +134,9 @@ Caches are invalidated automatically after:
 - Star/unstar actions
 
 ### Background Jobs
+
 Celery is used for:
+
 - Image thumbnail generation
 - PDF preview generation
 - Async file processing
@@ -129,21 +146,25 @@ Celery is used for:
 ## Current Limitations / Missing Features
 
 ### Upload UX
+
 Currently uploads only support drag & drop.
 
 Known issues:
-- Some drag & drop edge cases are still unstable
+
+- ~~Some drag & drop edge cases are still unstable~~
 - Upload flow still needs refinement
 - Upload error handling can be improved
 
 Planned improvements:
+
 - Upload via file picker/dropdown
 - Better upload retry handling
 - Pause/resume upload support
 - Improved upload progress UX
 
 ### Missing Features
-- Permanent delete
+
+- ~~Permanent delete~~
 - Move file/folder operation
 - File sharing system
 - Public share links
@@ -156,7 +177,9 @@ Planned improvements:
 ## Running Locally
 
 ### Requirements
+
 Make sure these are installed on your machine:
+
 - Python 3.13+
 - Node.js
 - Docker
@@ -167,6 +190,7 @@ Make sure these are installed on your machine:
 ## Infrastructure Setup
 
 This project uses Docker only for infrastructure services:
+
 - PostgreSQL
 - Redis
 
@@ -223,6 +247,7 @@ celery -A celery_app.celery_app worker --loglevel=info --pool=prefork --concurre
 ## Frontend Setup
 
 ### Install Dependencies
+
 ```bash
 pnpm install
 ```

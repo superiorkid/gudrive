@@ -5,6 +5,7 @@ import { fetchNodes } from "@/services/node-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { Suspense } from "react"
 import DetailFolderPage from "./_components/detail-folder-page"
+import AppContext from "@/app/(dashboard)/_components/app-context"
 
 type Props = {
   params: Promise<{ folderId: string }>
@@ -54,7 +55,9 @@ const FolderPage = async ({ params, searchParams }: Props) => {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <Suspense fallback={<Skeleton className="h-8 w-36" />}>
-        <DetailFolderPage folderId={folderId} />
+        <AppContext>
+          <DetailFolderPage folderId={folderId} />
+        </AppContext>
       </Suspense>
     </HydrationBoundary>
   )

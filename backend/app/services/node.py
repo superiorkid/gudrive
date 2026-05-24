@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 from typing import Optional
 
 from sqlalchemy import delete, func, or_, select, update
@@ -13,11 +14,12 @@ from app.common.exceptions import (
     BadRequestException,
     NotFoundException,
 )
+from app.lib.generate_unique_filename import generate_unique_filename
 from app.lib.is_descendant import is_descendant
 from app.models.node import Node, NodeType
 from app.models.starred_node import StarredNode
 from app.models.user import User
-from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
+from app.schemas.node import CreateNodeSchema, RenameNodeSchema, UpdateNodeSchema
 from app.services.cache import CacheService
 from app.services.node_query import (
     apply_file_filter,
@@ -698,3 +700,64 @@ async def force_delete_service(
         "deleted": len(nodes_to_delete),
         "node_id": str(node.id),
     }
+
+
+async def rename_node_service(
+    db: AsyncSession,
+    current_user: User,
+    node_id: uuid.UUID,
+    payload: RenameNodeSchema,
+    cache: CacheService,
+):
+    result = await db.execute(
+        select(Node).where(
+            Node.id == node_id,
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
+    )
+    node = result.scalar_one_or_none()
+    if not node:
+        raise NotFoundException("Node", str(node_id))
+
+    new_name = payload.new_name.strip()
+    if not new_name:
+        raise BadRequestException(
+            "Name cannot be empty",
+            details={"new_name": payload.new_name},
+        )
+
+    if new_name == node.name:
+        return {"success": True}
+
+    if node.type == NodeType.FILE:
+        old_suffix = Path(node.name).suffix
+        new_suffix = Path(new_name).suffix
+
+        if not new_suffix and old_suffix:
+            new_name = f"{new_name}{old_suffix}"
+
+    resolved_name = await generate_unique_filename(
+        db=db, owner_id=current_user.id, parent_id=node.parent_id, filename=new_name
+    )
+    node.name = resolved_name
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise AlreadyExistsException(
+            "Node",
+            "name",
+            resolved_name,
+        )
+
+    await db.refresh(node)
+    # invalidate detail cache
+    await cache.delete(f"node:detail:user={current_user.id}:node={node.id}")
+    # invalidate folder listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={node.parent_id}:*")
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+
+    return {"success": True}

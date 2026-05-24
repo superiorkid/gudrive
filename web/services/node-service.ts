@@ -227,3 +227,30 @@ export const forceDelete = async (nodeId: string) => {
     throw error
   }
 }
+
+export const renameNode = async (params: {
+  nodeId: string
+  newName: string
+}) => {
+  const axiosInstance = await createAxiosInstance()
+
+  try {
+    const response = await axiosInstance.patch(
+      `/v1/nodes/${params.nodeId}/rename`,
+      { new_name: params.newName }
+    )
+    return response.data as ApiResponse<TNode>
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError
+      console.error("API Error Status:", axiosError.response?.status)
+      console.error("Server Data:", axiosError.response?.data)
+    } else if (error instanceof Error) {
+      console.error("Native Erro:", error.message)
+    } else {
+      console.error("Unexpected Error:", error)
+    }
+
+    throw error
+  }
+}

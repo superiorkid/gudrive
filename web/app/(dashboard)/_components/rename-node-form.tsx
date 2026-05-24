@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNode } from "@/hooks/apis/nodes/use-node"
-import { useUpdateNode } from "@/hooks/apis/nodes/use-update-node"
+import { useRenameNode } from "@/hooks/apis/nodes/use-rename-node"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { useEffect } from "react"
 import { Controller, useForm } from "react-hook-form"
-import { TUpdateNodeSchema, updateNodeSchema } from "../schema"
+import { renameNodeSchema, TRenameNodeSchema } from "../schema"
 
 type Props = {
   nodeId: string
@@ -19,16 +19,16 @@ const RenameNodeForm = ({ nodeId, onUpdateSuccess }: Props) => {
   const { data: node, isPending: nodePending } = useNode(nodeId)
 
   const form = useForm({
-    resolver: standardSchemaResolver(updateNodeSchema),
+    resolver: standardSchemaResolver(renameNodeSchema),
     defaultValues: {
       newName: node?.data.name ?? "",
     },
   })
 
-  const { mutate: updateNodeMutation, isPending: updateNodePending } =
-    useUpdateNode({ nodeId, onSuccess: () => onUpdateSuccess?.() })
-  const onSubmit = (values: TUpdateNodeSchema) => {
-    updateNodeMutation(values)
+  const { mutate: renameNodeMutation, isPending: renameNodePending } =
+    useRenameNode({ nodeId, onSuccess: () => onUpdateSuccess?.() })
+  const onSubmit = (values: TRenameNodeSchema) => {
+    renameNodeMutation(values.newName)
   }
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const RenameNodeForm = ({ nodeId, onUpdateSuccess }: Props) => {
       <Controller
         name="newName"
         control={form.control}
-        disabled={nodePending || updateNodePending}
+        disabled={nodePending || renameNodePending}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <Input
@@ -60,7 +60,7 @@ const RenameNodeForm = ({ nodeId, onUpdateSuccess }: Props) => {
       />
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={nodePending || updateNodePending}>
+        <Button type="submit" disabled={nodePending || renameNodePending}>
           Save
         </Button>
       </div>

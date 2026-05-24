@@ -13,3 +13,8 @@ export const updateNodeSchema = z.object({
 })
 
 export type TUpdateNodeSchema = z.infer<typeof updateNodeSchema>
+
+export const renameNodeSchema = z.object({
+  newName: z.string().min(1),
+})
+export type TRenameNodeSchema = z.infer<typeof renameNodeSchema>

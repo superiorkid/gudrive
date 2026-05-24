@@ -12,6 +12,19 @@ class CreateNodeSchema(BaseModel):
 class UpdateNodeSchema(BaseModel):
     name: Optional[str] = None
     parent_id: Optional[uuid.UUID] = None
+    mode: str  # 'copy' or 'cut'
+
+
+class RenameNodeSchema(BaseModel):
+    new_name: str
+
+
+class MoveNodeSchema(BaseModel):
+    parent_id: Optional[uuid.UUID] = None
+
+
+class CopyNodeSchema(BaseModel):
+    parent_id: Optional[uuid.UUID] = None
 
 
 class UpdateNodeOut(BaseModel):

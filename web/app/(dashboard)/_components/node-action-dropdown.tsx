@@ -18,7 +18,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useUpdateNode } from "@/hooks/apis/nodes/use-update-node"
 import { useMoveNode } from "@/providers/move-node-provider"
 import {
   ClipboardPasteIcon,
@@ -81,23 +80,21 @@ const NodeActionDropdown = ({
   const { nodeIds, hasItems, setCutNodes, setCopyNodes, clearClipboard } =
     useMoveNode()
 
-  const { mutate: moveNodeMutaion, isPending: moveNodePending } = useUpdateNode(
-    {
-      nodeId: nodeIds.at(0) || "",
-      onSuccess: () => {
-        clearClipboard()
-        setOpenDropdown(false)
-      },
-    }
-  )
+  // const { mutate: renameNodeMutation, isPending: renameNodePending } =
+  //   useRenameNode({
+  //     nodeId: nodeIds.at(0) || "",
+  //     onSuccess: () => {
+  //       setOpenDropdown(false)
+  //     },
+  //   })
 
   const handlePaste = (newParentId?: string) => {
     if (!hasItems) return
-    moveNodeMutaion({ parentId: newParentId })
+    // moveNodeMutaion({ parentId: newParentId })
   }
 
   return (
-    <Dialog>
+    <Dialog open={!!dialog}>
       <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
         <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
 
@@ -195,7 +192,7 @@ const NodeActionDropdown = ({
 
                   {nodeType === "folder" && (
                     <DropdownMenuItem
-                      disabled={!hasItems || moveNodePending}
+                      disabled={!hasItems}
                       onSelect={(e) => {
                         e.preventDefault()
                         handlePaste(nodeId)
@@ -226,8 +223,14 @@ const NodeActionDropdown = ({
 
       <DialogContent>
         {dialog === Dialogs.renameDialog ? (
-          <RenameNodeForm nodeId={nodeId} />
-        ) : (
+          <RenameNodeForm
+            nodeId={nodeId}
+            onUpdateSuccess={() => {
+              setDialog(null)
+              setOpenDropdown(false)
+            }}
+          />
+        ) : dialog === Dialogs.forceDeleteDialog ? (
           <>
             <DialogHeader>
               <DialogTitle>Delete Forever?</DialogTitle>
@@ -251,7 +254,7 @@ const NodeActionDropdown = ({
               </Button>
             </DialogFooter>
           </>
-        )}
+        ) : undefined}
       </DialogContent>
     </Dialog>
   )

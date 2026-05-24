@@ -13,7 +13,7 @@ from app.api.deps import (
 from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
-from app.schemas.node import CreateNodeSchema, UpdateNodeSchema
+from app.schemas.node import CreateNodeSchema, RenameNodeSchema, UpdateNodeSchema
 from app.services.cache import CacheService
 from app.services.node import (
     create_node_service,
@@ -21,6 +21,7 @@ from app.services.node import (
     detail_node_service,
     force_delete_service,
     get_nodes_service,
+    rename_node_service,
     restore_node_service,
     toggle_star_service,
     update_node_service,
@@ -133,6 +134,30 @@ async def delete_node(
         db=db, current_user=current_user, node_id=node_id, cache=cache
     )
     return success_response(data={"ok": True})
+
+
+@nodes_router_v1.patch("/{node_id}/rename")
+async def rename_node(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    node_id: uuid.UUID,
+    payload: RenameNodeSchema,
+    cache: CacheService = Depends(get_cache),
+):
+    result = await rename_node_service(
+        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
+    )
+    return success_response(data=result)
+
+
+@nodes_router_v1.post("/{node_id}/move")
+async def cut_node():
+    pass
+
+
+@nodes_router_v1.post("/{node_id}/copy")
+async def copy_node():
+    pass
 
 
 @nodes_router_v1.post(

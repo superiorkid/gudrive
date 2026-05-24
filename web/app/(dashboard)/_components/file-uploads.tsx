@@ -219,9 +219,15 @@ const FileUploads = ({ children }: Props) => {
     >
       <FileUploadDropzone
         onClick={(e) => e.preventDefault()}
-        className="block min-h-dvh w-full items-stretch justify-start border-none p-0"
+        className="group relative block min-h-dvh w-full items-stretch justify-start border-none p-0"
       >
         {children}
+
+        <div className="pointer-events-none absolute inset-0 z-50 hidden items-center justify-center rounded-lg border-4 border-dashed border-blue-500 bg-blue-500/20 backdrop-blur-sm transition-opacity duration-150 group-data-dragging:flex">
+          <div className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-2xl">
+            Drop files to upload
+          </div>
+        </div>
       </FileUploadDropzone>
 
       <FileUploadList className="fixed right-6 bottom-6 z-50 w-80 rounded-lg border bg-background p-2 shadow-2xl">

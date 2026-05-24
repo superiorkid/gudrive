@@ -2,11 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { useForceDeleteNode } from "@/hooks/apis/nodes/use-force-delete-node"
 import { useRestoreNode } from "@/hooks/apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "@/hooks/apis/nodes/use-soft-delete-node"
 import { useToggleStar } from "@/hooks/apis/nodes/use-toggle-star"
 import { useDisplay } from "@/hooks/use-display"
 import { getFileIcon } from "@/lib/folder-icon"
+import { cn } from "@/lib/utils"
 import { TNode } from "@/types/node-type"
 import {
   ClockIcon,
@@ -18,7 +20,6 @@ import {
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import NodeActionDropdown from "./node-action-dropdown"
-import { useForceDeleteNode } from "@/hooks/apis/nodes/use-force-delete-node"
 
 type Props = {
   node: TNode
@@ -41,6 +42,7 @@ const NodeCard = ({
 }: Props) => {
   const { push } = useRouter()
   const [display] = useDisplay()
+  const searchParams = new URLSearchParams({ display })
 
   const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
     useSoftDeleteNode()
@@ -54,14 +56,19 @@ const NodeCard = ({
 
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder") {
-      push(`/drive/folders/${node.id}?display=${display}`)
+      push(`/drive/folders/${node.id}?${searchParams.toString()}`)
     } else {
       console.log("Opening file preview for:", node.name)
     }
   }
 
   return (
-    <div onDoubleClick={() => handleNodeNavigation(node)}>
+    <div
+      onDoubleClick={() => handleNodeNavigation(node)}
+      className={cn(
+        node.type === "folder" ? "cursor-pointer" : "cursor-default"
+      )}
+    >
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
@@ -85,6 +92,7 @@ const NodeCard = ({
               toggleStarPending={toggleStarPending}
               forceDeleteMutation={forceDeleteMutation}
               forceDeleteNodePending={forceDeletePending}
+              nodeType={node.type}
             >
               <Button
                 variant="ghost"

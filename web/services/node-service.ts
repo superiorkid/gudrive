@@ -184,6 +184,7 @@ export const updateNode = async (params: {
   try {
     const response = await axiosInstance.put(`/v1/nodes/${params.nodeId}`, {
       name: params.payload.newName,
+      parent_id: params.payload.parentId,
     })
     return response.data as ApiResponse<{
       id: string

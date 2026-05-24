@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { getQueryClient } from "@/lib/query-client"
 import { authKeys } from "@/lib/query-keys"
+import { MoveNodeContextProvider } from "@/providers/move-node-provider"
 import { getSession } from "@/services/auth-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import React, { Suspense } from "react"
@@ -20,12 +21,14 @@ const DashboardLayout = async ({ children }: Props) => {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <SidebarProvider>
-        <Suspense>
-          <AppSidebar />
-        </Suspense>
-        {children}
-      </SidebarProvider>
+      <MoveNodeContextProvider>
+        <SidebarProvider>
+          <Suspense>
+            <AppSidebar />
+          </Suspense>
+          {children}
+        </SidebarProvider>
+      </MoveNodeContextProvider>
     </HydrationBoundary>
   )
 }

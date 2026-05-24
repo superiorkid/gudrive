@@ -171,11 +171,12 @@ async def get_nodes_service(
             StarredNode.user_id == current_user.id
         )
 
-    if scope != "starred":
-        if not keyword:
-            query = query.where(Node.parent_id == parent_id)
-        elif parent_id:
-            query = query.where(Node.parent_id == parent_id)
+    if status != "trashed":
+        if scope != "starred":
+            if not keyword:
+                query = query.where(Node.parent_id == parent_id)
+            elif parent_id:
+                query = query.where(Node.parent_id == parent_id)
 
     query = query.options(joinedload(Node.parent))
 
@@ -358,7 +359,7 @@ async def update_node_service(
         if payload.parent_id == node.id:
             raise BadRequestException(
                 "Cannot move node into itself",
-                details={"new_parent_id": payload.parent_id},
+                details={"new_parent_id": str(payload.parent_id)},
             )
 
         # preventing moving to descendant

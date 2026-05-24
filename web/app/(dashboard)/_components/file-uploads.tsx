@@ -6,7 +6,6 @@ import {
   FileUpload,
   FileUploadDropzone,
   FileUploadItem,
-  FileUploadItemDelete,
   FileUploadItemMetadata,
   FileUploadItemPreview,
   FileUploadItemProgress,
@@ -35,21 +34,25 @@ type UploadControl = {
   chunkSize: number
 }
 
+type UploadFile = {
+  id: string
+  file: File
+}
+
 const FileUploads = ({ children }: Props) => {
-  const [files, setFiles] = React.useState<File[]>([])
+  const [files, setFiles] = React.useState<UploadFile[]>([])
   const { folderId } = useParams<{ folderId?: string }>()
+
   const [uploadStates, setUploadStates] = useState<
     Record<string, UploadControl>
   >({})
 
   const uploadsRef = useRef<Map<string, UploadControl>>(new Map())
+
   const callbacksRef = useRef<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onProgress?: any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess?: any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError?: any
+    onProgress?: (file: File, progress: number) => void
+    onSuccess?: (file: File) => void
+    onError?: (file: File, error: Error) => void
   }>({})
 
   const { mutateAsync: initUpload } = useInitUpload()
@@ -65,19 +68,21 @@ const FileUploads = ({ children }: Props) => {
   }
 
   const continueUpload = async (
-    file: File,
+    uploadFile: UploadFile,
     control: UploadControl,
-    onProgress: (file: File, progress: number) => void
+    onProgress?: (file: File, progress: number) => void
   ) => {
-    const key = `${file.name}-${file.size}`
+    const { file, id } = uploadFile
+
     while (control.offset < file.size) {
       if (control.status === "paused") return
 
       const controller = new AbortController()
+
       control.controller = controller
       control.status = "uploading"
 
-      syncState(key, control)
+      syncState(id, control)
 
       const chunk = file.slice(
         control.offset,
@@ -90,26 +95,43 @@ const FileUploads = ({ children }: Props) => {
         signal: controller.signal,
         offset: control.offset,
       })
+
       control.offset = res?.data.offset || 0
+
+      syncState(id, control)
+
       const progress = (control.offset / file.size) * 100
-      onProgress(file, progress)
+
+      onProgress?.(file, progress)
     }
 
     await completeUpload(control.uploadId!)
   }
 
   const onUpload: NonNullable<FileUploadProps["onUpload"]> = React.useCallback(
-    async (files, { onProgress, onSuccess, onError }) => {
-      callbacksRef.current = { onProgress, onSuccess, onError }
+    async (incomingFiles, { onProgress, onSuccess, onError }) => {
+      callbacksRef.current = {
+        onProgress,
+        onSuccess,
+        onError,
+      }
+
+      const uploadFiles: UploadFile[] = incomingFiles.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+      }))
+
+      setFiles((prev) => [...prev, ...uploadFiles])
+
       try {
         await Promise.all(
-          files.map(async (file) => {
-            const key = `${file.name}-${file.size}`
+          uploadFiles.map(async (uploadFile) => {
+            const { file, id } = uploadFile
 
             try {
-              let control = uploadsRef.current.get(key)
+              let control = uploadsRef.current.get(id)
 
-              // init (only once)
+              // init upload
               if (!control) {
                 const initRes = await initUpload({
                   folderId,
@@ -124,39 +146,51 @@ const FileUploads = ({ children }: Props) => {
                   status: "uploading",
                   chunkSize: initRes?.data.chunk_size || 0,
                 }
-                uploadsRef.current.set(key, control)
-                syncState(key, control)
+
+                uploadsRef.current.set(id, control)
+
+                syncState(id, control)
               }
 
-              const headRes = await getOffset(control.uploadId as string)
+              const headRes = await getOffset(control.uploadId!)
+
               control.offset = Number(headRes?.headers["upload-offset"] || 0)
 
-              await continueUpload(file, control, onProgress)
+              syncState(id, control)
+
+              await continueUpload(uploadFile, control, onProgress)
+
               control.status = "completed"
-              syncState(key, control)
-              onSuccess(file)
+
+              syncState(id, control)
+
+              onSuccess?.(file)
             } catch (error) {
-              // // ignore abort error (pause)
-              // if (
-              //   axios.isCancel(error) ||
-              //   (error as Error).name === "CanceledError"
-              // ) {
-              //   return
-              // }
+              // ignore pause abort
+              if (
+                axios.isCancel(error) ||
+                (error as Error).name === "CanceledError"
+              ) {
+                return
+              }
 
               const err = axios.isAxiosError(error)
                 ? new Error(error.response?.data.message || "Upload Failed")
                 : (error as Error)
 
-              uploadsRef.current.get(key)!.status = "error"
-              syncState(key, uploadsRef.current.get(key)!)
-              onError(file, err)
+              const existing = uploadsRef.current.get(id)
+
+              if (existing) {
+                existing.status = "error"
+                syncState(id, existing)
+              }
+
+              onError?.(file, err)
             }
           })
         )
       } catch (error) {
-        // This handles any error that might occur outside the individual upload processes
-        console.error("Unexpected error during upload:", error)
+        console.error("Unexpected upload error:", error)
       }
     },
     [folderId]
@@ -168,51 +202,72 @@ const FileUploads = ({ children }: Props) => {
     })
   }, [])
 
-  const pauseUpload = (file: File) => {
-    const key = `${file.name}-${file.size}`
-    const control = uploadsRef.current.get(key)
+  const pauseUpload = (uploadFile: UploadFile) => {
+    const control = uploadsRef.current.get(uploadFile.id)
+
     if (!control) return
+
     control.status = "paused"
+
     control.controller?.abort()
-    syncState(key, control)
+
+    syncState(uploadFile.id, control)
   }
 
-  const resumeUpload = async (file: File) => {
-    const key = `${file.name}-${file.size}`
-    const control = uploadsRef.current.get(key)
+  const resumeUpload = async (uploadFile: UploadFile) => {
+    const control = uploadsRef.current.get(uploadFile.id)
+
     if (!control || !control.uploadId) return
 
     if (control.status === "uploading") return
 
     try {
-      const headRes = await getOffset(control.uploadId as string)
+      const headRes = await getOffset(control.uploadId)
 
       control.offset = Number(headRes.headers["upload-offset"] || 0)
-      control.status = "uploading"
-      syncState(key, control)
 
-      await continueUpload(file, control, callbacksRef.current.onProgress)
+      control.status = "uploading"
+
+      syncState(uploadFile.id, control)
+
+      await continueUpload(uploadFile, control, callbacksRef.current.onProgress)
 
       control.status = "completed"
-      syncState(key, control)
 
-      callbacksRef.current.onSuccess(file)
+      syncState(uploadFile.id, control)
+
+      callbacksRef.current.onSuccess?.(uploadFile.file)
     } catch (error) {
       if (axios.isCancel(error) || (error as Error).name === "CanceledError") {
         return
       }
 
       control.status = "error"
-      syncState(key, control)
 
-      callbacksRef.current.onError(file, error as Error)
+      syncState(uploadFile.id, control)
+
+      callbacksRef.current.onError?.(uploadFile.file, error as Error)
     }
+  }
+
+  const removeUpload = (uploadFile: UploadFile) => {
+    uploadsRef.current.delete(uploadFile.id)
+
+    setUploadStates((prev) => {
+      const copy = { ...prev }
+
+      delete copy[uploadFile.id]
+
+      return copy
+    })
+
+    setFiles((prev) => prev.filter((item) => item.id !== uploadFile.id))
   }
 
   return (
     <FileUpload
-      value={files}
-      onValueChange={setFiles}
+      value={files.map((f) => f.file)}
+      onValueChange={() => {}}
       onUpload={onUpload}
       onFileReject={onFileReject}
       multiple
@@ -231,19 +286,26 @@ const FileUploads = ({ children }: Props) => {
       </FileUploadDropzone>
 
       <FileUploadList className="fixed right-6 bottom-6 z-50 w-80 rounded-lg border bg-background p-2 shadow-2xl">
-        {files.map((file: File) => {
-          const key = `${file.name}-${file.size}`
-          const control = uploadStates[key]
+        {files.map((uploadFile) => {
+          const file = uploadFile.file
+
+          const control = uploadStates[uploadFile.id]
 
           return (
-            <FileUploadItem key={key} value={file} className="flex-col gap-2">
+            <FileUploadItem
+              key={uploadFile.id}
+              value={file}
+              className="flex-col gap-2"
+            >
               <div className="flex w-full items-center gap-2">
                 <FileUploadItemPreview />
+
                 <FileUploadItemMetadata />
+
                 <ButtonGroup>
                   {control?.status === "uploading" && (
                     <Button
-                      onClick={() => pauseUpload(file)}
+                      onClick={() => pauseUpload(uploadFile)}
                       size="icon"
                       variant="ghost"
                       className="size-8"
@@ -251,10 +313,11 @@ const FileUploads = ({ children }: Props) => {
                       <PauseIcon className="size-4" />
                     </Button>
                   )}
+
                   {(control?.status === "paused" ||
                     control?.status === "error") && (
                     <Button
-                      onClick={() => resumeUpload(file)}
+                      onClick={() => resumeUpload(uploadFile)}
                       size="icon"
                       variant="ghost"
                       className="size-8"
@@ -262,17 +325,18 @@ const FileUploads = ({ children }: Props) => {
                       <PlayIcon className="size-4" />
                     </Button>
                   )}
-                  <FileUploadItemDelete asChild>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="size-8"
-                    >
-                      <XIcon className="size-4" />
-                    </Button>
-                  </FileUploadItemDelete>
+
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="size-8"
+                    onClick={() => removeUpload(uploadFile)}
+                  >
+                    <XIcon className="size-4" />
+                  </Button>
                 </ButtonGroup>
               </div>
+
               <FileUploadItemProgress />
             </FileUploadItem>
           )

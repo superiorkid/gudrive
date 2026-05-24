@@ -15,16 +15,23 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useUpdateNode } from "@/hooks/apis/nodes/use-update-node"
+import { useMoveNode } from "@/providers/move-node-provider"
 import {
+  ClipboardPasteIcon,
+  CopyIcon,
   DownloadIcon,
   PencilIcon,
+  ScissorsIcon,
   StarIcon,
   TimerResetIcon,
   TrashIcon,
   XCircleIcon,
 } from "lucide-react"
+import { usePathname } from "next/navigation"
 import React, { useState } from "react"
 import RenameNodeForm from "./rename-node-form"
 
@@ -41,6 +48,7 @@ type Props = {
   toggleStarMutation: (nodeId: string) => void
   forceDeleteNodePending: boolean
   forceDeleteMutation: (nodeId: string) => void
+  nodeType: "folder" | "file"
 }
 
 enum Dialogs {
@@ -61,12 +69,36 @@ const NodeActionDropdown = ({
   toggleStarPending,
   forceDeleteMutation,
   forceDeleteNodePending,
+  nodeType,
 }: Props) => {
   const [dialog, setDialog] = useState<Dialogs | null>(null)
+  const [openDropdown, setOpenDropdown] = useState<boolean>(false)
+
+  const pathname = usePathname()
+  const displayMoveNodeMenu =
+    pathname.includes("my-drive") || pathname.includes("folders")
+
+  const { nodeIds, hasItems, setCutNodes, setCopyNodes, clearClipboard } =
+    useMoveNode()
+
+  const { mutate: moveNodeMutaion, isPending: moveNodePending } = useUpdateNode(
+    {
+      nodeId: nodeIds.at(0) || "",
+      onSuccess: () => {
+        clearClipboard()
+        setOpenDropdown(false)
+      },
+    }
+  )
+
+  const handlePaste = (newParentId?: string) => {
+    if (!hasItems) return
+    moveNodeMutaion({ parentId: newParentId })
+  }
 
   return (
     <Dialog>
-      <DropdownMenu>
+      <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
         <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="min-w-44">
@@ -134,6 +166,47 @@ const NodeActionDropdown = ({
                   </>
                 )}
               </DropdownMenuItem>
+
+              {displayMoveNodeMenu && (
+                <>
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      setCutNodes([nodeId])
+                      setOpenDropdown(false)
+                    }}
+                  >
+                    <ScissorsIcon className="mr-2 size-4" />
+                    Cut
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      setCopyNodes([nodeId])
+                      setOpenDropdown(false)
+                    }}
+                  >
+                    <CopyIcon className="mr-2 size-4" />
+                    Copy
+                  </DropdownMenuItem>
+
+                  {nodeType === "folder" && (
+                    <DropdownMenuItem
+                      disabled={!hasItems || moveNodePending}
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        handlePaste(nodeId)
+                      }}
+                    >
+                      <ClipboardPasteIcon className="mr-2 size-4" />
+                      Paste Into Folder
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
 
               <DropdownMenuItem
                 className="text-destructive hover:text-destructive"

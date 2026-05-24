@@ -16,6 +16,7 @@ from app.common.exceptions import (
     NotFoundException,
 )
 from app.core.config import Settings
+from app.lib.generate_unique_filename import generate_unique_filename
 from app.models.node import Node, NodeType
 from app.models.upload_session import UploadSession, UploadStatus
 from app.models.user import User
@@ -47,18 +48,12 @@ async def initialize_upload_service(
                 "Parent must be a folder", details={"parent_type": parent.type}
             )
 
-    # prevent duplicate filename (same folder)
-    query = select(Node).where(
-        Node.parent_id == payload.parent_id,
-        Node.owner_id == current_user.id,
-        Node.name == payload.filename,
-        Node.deleted_at.is_(None),
+    resolved_filaname = await generate_unique_filename(
+        db=db,
+        owner_id=current_user.id,
+        parent_id=payload.parent_id,
+        filename=payload.filename,
     )
-    result = await db.execute(query)
-    existing = result.scalar_one_or_none()
-
-    if existing:
-        raise AlreadyExistsException("Node", "name", payload.filename)
 
     upload_id = uuid.uuid7()
 
@@ -93,7 +88,7 @@ async def initialize_upload_service(
     session = UploadSession(
         id=upload_id,
         owner_id=current_user.id,
-        filename=payload.filename,
+        filename=resolved_filaname,
         mime_type=payload.mime_type,
         total_size=payload.total_size,
         chunk_size=config.upload_chunk_size,
@@ -230,6 +225,8 @@ async def upload_chunk_service(
 
     try:
         with open(storage_path, "r+b") as f:
+            f.seek(expected)
+
             async for chunk in request.stream():
                 if not chunk:
                     continue
@@ -245,6 +242,7 @@ async def upload_chunk_service(
 
                 f.write(chunk)
                 written += len(chunk)
+
     except FileNotFoundError:
         raise AppException(
             error_code="FILE_NOT_FOUND",

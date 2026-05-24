@@ -10,6 +10,41 @@ class VideoProcessor(BaseFileProcessor):
     def supports(self, mime_type: str) -> bool:
         return mime_type.startswith("video/")
 
+    def _extract_frame(
+        self, input_path: str, output_path: str, seek: str | None
+    ) -> tuple[bool, str]:
+        cmd = ["ffmpeg"]
+        if seek:
+            cmd += ["-ss", seek]
+        cmd += [
+            "-i",
+            input_path,
+            "-vframes",
+            "1",
+            "-q:v",
+            "2",
+            "-y",
+            output_path,
+        ]
+        try:
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=15,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "ffmpeg timeout"
+
+        if (
+            result.returncode == 0
+            and os.path.exists(output_path)
+            and os.path.getsize(output_path) > 0
+        ):
+            return True, ""
+        return False, result.stderr.decode(errors="ignore")[-500:]
+
     def process(self, input_path: str, output_path: str) -> dict:
         base_dir = os.path.dirname(output_path)
         os.makedirs(base_dir, exist_ok=True)
@@ -17,50 +52,21 @@ class VideoProcessor(BaseFileProcessor):
         temp_frame_path = f"{output_path}.temp.jpg"
 
         try:
-            # FFmpeg Command Flags broken down:
-            # -ss 00:00:02 -> Fast forward directly to 2 seconds in (skips black intros)
-            # -i input_path -> Target input video file path
-            # -vframes 1 -> Tell the engine to drop exactly 1 image frame and quit
-            # -q:v 2 -> Set high-quality JPEG matrix scale factor (2-5 is optimal)
-            # -y -> Overwrite the file if it exists without asking
-            cmd = [
-                "ffmpeg",
-                "-ss",
-                "00:00:02",
-                "-i",
-                input_path,
-                "-vframes",
-                "1",
-                "-q:v",
-                "2",
-                "-y",
-                temp_frame_path,
-            ]
+            ok, err = self._extract_frame(input_path, temp_frame_path, "00:00:02")
 
-            subprocess.run(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=15,
-                check=True,
-            )
+            if not ok:
+                ok, err = self._extract_frame(input_path, temp_frame_path, None)
 
-            if not os.path.exists(temp_frame_path):
-                raise RuntimeError(
-                    "FFmpeg failed to output an intermediate video frame snapshot."
-                )
+            if not ok:
+                raise RuntimeError(f"FFmpeg gagal extract frame: {err}")
 
             with Image.open(temp_frame_path) as img:
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
-
                 img.thumbnail((300, 300), Image.Resampling.LANCZOS)
                 img.save(output_path, "JPEG", optimize=True, quality=85)
 
-            return {
-                "type": "video",
-                "preview_path": output_path,
-            }
+            return {"type": "video", "preview_path": output_path}
 
         finally:
             if os.path.exists(temp_frame_path):

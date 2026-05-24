@@ -31,7 +31,7 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
               <div className="size-5 shrink-0">
                 {getFileIcon(type, mime_type || "")}
               </div>
-              <span className="max-w-50 truncate font-medium">{name}</span>
+              <span className="truncate font-medium">{name}</span>
               {is_starred && <StarIcon className="size-3 fill-foreground" />}
             </div>
           )
@@ -82,9 +82,14 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
     const actionColumn: ColumnDef<TNode> = {
       id: "actions",
       cell: ({ row }) => {
-        const { id: nodeId, is_starred: isStarred } = row.original
+        const { id: nodeId, is_starred: isStarred, type } = row.original
         return (
-          <ActionRow nodeId={nodeId} variant={variant} isStarred={isStarred} />
+          <ActionRow
+            nodeId={nodeId}
+            variant={variant}
+            isStarred={isStarred}
+            nodeType={type}
+          />
         )
       },
     }
@@ -95,12 +100,14 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
 
 function ActionRow({
   nodeId,
+  nodeType,
   variant,
   isStarred,
 }: {
   nodeId: string
   variant: TableVariant
   isStarred: boolean
+  nodeType: "folder" | "file"
 }) {
   const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
     useSoftDeleteNode()
@@ -125,6 +132,7 @@ function ActionRow({
     >
       <NodeActionDropdown
         nodeId={nodeId}
+        nodeType={nodeType}
         isTrashPage={variant === "trash"}
         restoreNodeMutation={restoreNodeMutation}
         restoreNodePending={restoreNodePending}

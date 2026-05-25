@@ -11,6 +11,7 @@ import {
 import { useDisplay } from "@/hooks/use-display"
 import { cn } from "@/lib/utils"
 import { useClipboard } from "@/providers/clipboard-provider"
+import { useNodeSelection } from "@/providers/node-selection-provider"
 import { TNode } from "@/types/node-type"
 import {
   ColumnDef,
@@ -40,6 +41,9 @@ export function DataTable<TData extends TNode, TValue>({
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
+
+  const { selectSingleNode, toggleSelectedNode, isSelected } =
+    useNodeSelection()
 
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder" && !pathname.includes("trash")) {
@@ -81,18 +85,36 @@ export function DataTable<TData extends TNode, TValue>({
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => {
               const isInClipboard = isNodeInClipboard(row.original.id)
+              const isCurrentSelected = isSelected(row.original.id)
+
               return (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={isCurrentSelected && "selected"}
                   onDoubleClick={() => handleNodeNavigation(row.original)}
                   className={cn(
                     "transition-colors select-none",
                     row.original.type === "folder"
                       ? "cursor-pointer"
                       : "cursor-default",
-                    isInClipboard && "bg-muted"
+                    isCurrentSelected &&
+                      "bg-blue-100 hover:bg-blue-200/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/40",
+                    isInClipboard && "bg-muted/60 opacity-60"
                   )}
+                  onClick={(event) => {
+                    event.stopPropagation()
+
+                    if (event.ctrlKey || event.metaKey) {
+                      toggleSelectedNode(row.original.id)
+                      return
+                    }
+
+                    if (!isCurrentSelected) {
+                      selectSingleNode(row.original.id)
+                    } else {
+                      toggleSelectedNode(row.original.id)
+                    }
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

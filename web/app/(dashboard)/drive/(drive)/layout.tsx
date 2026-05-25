@@ -1,9 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import React, { Suspense } from "react"
+import AppActions from "../_components/app-actions"
 import AppBreadcrumb from "../_components/app-breadcrumb"
 import AppSearch from "../_components/app-search"
 import NodeDisplaySwitcher from "../_components/node-display-switcher"
-import NodeFilters from "../_components/node-filters"
 
 type Props = {
   children: React.ReactNode
@@ -39,17 +39,7 @@ const DriveLayout = ({ children }: Props) => {
         </div>
 
         <div className="space-y-3">
-          <Suspense
-            fallback={
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton key={`skeleton-${index}`} className="h-10 w-40" />
-                ))}
-              </div>
-            }
-          >
-            <NodeFilters />
-          </Suspense>
+          <AppActions />
           {children}
         </div>
       </div>

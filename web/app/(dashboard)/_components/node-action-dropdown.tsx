@@ -142,8 +142,6 @@ const NodeActionDropdown = ({
             onClick={(event) => {
               event.stopPropagation()
 
-              // if current node not selected,
-              // make it selected first
               if (!selectedNodeIds.includes(nodeId)) {
                 selectSingleNode(nodeId)
               }
@@ -227,9 +225,7 @@ const NodeActionDropdown = ({
                     disabled={cutNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-
                       cutNodes(activeNodeIds)
-
                       setOpenDropdown(false)
                     }}
                   >
@@ -241,9 +237,7 @@ const NodeActionDropdown = ({
                     disabled={copyNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-
                       copyNodes(activeNodeIds)
-
                       setOpenDropdown(false)
                     }}
                   >

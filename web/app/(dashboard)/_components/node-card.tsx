@@ -9,6 +9,8 @@ import { useToggleStar } from "@/hooks/apis/nodes/use-toggle-star"
 import { useDisplay } from "@/hooks/use-display"
 import { getFileIcon } from "@/lib/folder-icon"
 import { cn } from "@/lib/utils"
+import { useClipboard } from "@/providers/clipboard-provider"
+import { useNodeSelection } from "@/providers/node-selection-provider"
 import { TNode } from "@/types/node-type"
 import {
   ClockIcon,
@@ -62,100 +64,122 @@ const NodeCard = ({
     }
   }
 
+  const { selectSingleNode, toggleSelectedNode, isSelected } =
+    useNodeSelection()
+  const { isNodeInClipboard } = useClipboard()
+
+  const isInClipboard = isNodeInClipboard(node.id)
+  const isCurrentSelected = isSelected(node.id)
+
   return (
-    <div
+    <Card
       onDoubleClick={() => handleNodeNavigation(node)}
       onContextMenu={(event) => {
         event.stopPropagation()
       }}
+      data-state={isCurrentSelected && "selected"}
       className={cn(
-        "z-50",
-        node.type === "folder" ? "cursor-pointer" : "cursor-default"
+        "z-50 cursor-pointer transition-colors select-none",
+        isCurrentSelected && "border-blue-400 bg-blue-100 dark:bg-blue-950/40",
+        isInClipboard && "bg-muted opacity-60"
       )}
+      onClick={(event) => {
+        event.stopPropagation()
+        if (event.ctrlKey || event.metaKey) {
+          toggleSelectedNode(node.id)
+          return
+        }
+
+        if (!isCurrentSelected) {
+          selectSingleNode(node.id)
+        } else {
+          toggleSelectedNode(node.id)
+        }
+      }}
     >
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0">
-              {getFileIcon(node.type, node.mime_type || "")}
-            </div>
-
-            <span className="line-clamp-1 min-w-0 flex-1">{node.name}</span>
-          </div>
-
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="shrink-0">
-            <NodeActionDropdown
-              nodeId={node.id}
-              isTrashPage={isTrashPage}
-              restoreNodeMutation={restoreNodeMutation}
-              restoreNodePending={restoreNodePending}
-              softDeleteMutation={softDeleteMutation}
-              softDeleteNodePending={pendingSoftDelete}
-              isStarred={isStarred}
-              toggleStarMutation={toggleStarMutation}
-              toggleStarPending={toggleStarPending}
-              forceDeleteMutation={forceDeleteMutation}
-              forceDeleteNodePending={forceDeletePending}
-              nodeType={node.type}
-            >
-              <Button
-                variant="ghost"
-                className="size-8 p-0"
-                disabled={
-                  pendingSoftDelete || restoreNodePending || forceDeletePending
-                }
-              >
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </NodeActionDropdown>
+            {getFileIcon(node.type, node.mime_type || "")}
           </div>
-        </CardHeader>
 
-        {shouldRenderCard && (
-          <CardContent>
-            {((isFolder && isMixedView) || (isFolder && isTrashPage)) && (
-              <div className="flex aspect-square items-center justify-center">
-                <FolderIcon size={65} className="fill-sky-600 stroke-sky-600" />
-              </div>
-            )}
+          <span className="line-clamp-1 min-w-0 flex-1">{node.name}</span>
+        </div>
 
-            {isFile && (
-              <div className="relative aspect-square overflow-hidden rounded-md">
-                {node.preview_status === "ready" && node.preview_url ? (
-                  <Image
-                    fill
-                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${node.preview_url}`}
-                    alt={`image preview ${node.name}`}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover"
-                    quality={80}
-                    decoding="async"
-                    loading="eager"
-                  />
-                ) : node.preview_status === "processing" ? (
-                  <div className="flex h-full w-full animate-pulse items-center justify-center bg-muted">
-                    <Loader2Icon className="animate-spin text-muted-foreground" />
-                  </div>
-                ) : node.preview_status === "pending" ? (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <ClockIcon className="text-muted-foreground" />
-                  </div>
-                ) : node.preview_status === "failed" ? (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <ImageOffIcon className="text-red-500" />
-                  </div>
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <ImageOffIcon />
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        )}
-      </Card>
-    </div>
+        <div className="shrink-0">
+          <NodeActionDropdown
+            nodeId={node.id}
+            isTrashPage={isTrashPage}
+            restoreNodeMutation={restoreNodeMutation}
+            restoreNodePending={restoreNodePending}
+            softDeleteMutation={softDeleteMutation}
+            softDeleteNodePending={pendingSoftDelete}
+            isStarred={isStarred}
+            toggleStarMutation={toggleStarMutation}
+            toggleStarPending={toggleStarPending}
+            forceDeleteMutation={forceDeleteMutation}
+            forceDeleteNodePending={forceDeletePending}
+            nodeType={node.type}
+          >
+            <Button
+              variant="ghost"
+              className="size-8 p-0"
+              disabled={
+                pendingSoftDelete || restoreNodePending || forceDeletePending
+              }
+              // Prevent firing card selection mechanisms when opening the action dropdown menu
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontalIcon className="size-4" />
+            </Button>
+          </NodeActionDropdown>
+        </div>
+      </CardHeader>
+
+      {shouldRenderCard && (
+        <CardContent>
+          {((isFolder && isMixedView) || (isFolder && isTrashPage)) && (
+            <div className="flex aspect-square items-center justify-center">
+              <FolderIcon size={65} className="fill-sky-600 stroke-sky-600" />
+            </div>
+          )}
+
+          {isFile && (
+            <div className="relative aspect-square overflow-hidden rounded-md">
+              {node.preview_status === "ready" && node.preview_url ? (
+                <Image
+                  fill
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${node.preview_url}`}
+                  alt={`image preview ${node.name}`}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover"
+                  quality={80}
+                  decoding="async"
+                  loading="eager"
+                />
+              ) : node.preview_status === "processing" ? (
+                <div className="flex h-full w-full animate-pulse items-center justify-center bg-muted">
+                  <Loader2Icon className="animate-spin text-muted-foreground" />
+                </div>
+              ) : node.preview_status === "pending" ? (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <ClockIcon className="text-muted-foreground" />
+                </div>
+              ) : node.preview_status === "failed" ? (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <ImageOffIcon className="text-red-500" />
+                </div>
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <ImageOffIcon />
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
   )
 }
 

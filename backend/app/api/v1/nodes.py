@@ -13,10 +13,18 @@ from app.api.deps import (
 from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
-from app.schemas.node import CreateNodeSchema, RenameNodeSchema, UpdateNodeSchema
+from app.schemas.node import (
+    CopyNodeSchema,
+    CreateNodeSchema,
+    MoveNodeSchema,
+    RenameNodeSchema,
+    UpdateNodeSchema,
+)
 from app.services.cache import CacheService
 from app.services.node import (
+    copy_node_service,
     create_node_service,
+    cut_node_service,
     delete_node_service,
     detail_node_service,
     force_delete_service,
@@ -147,17 +155,56 @@ async def rename_node(
     result = await rename_node_service(
         db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
     )
-    return success_response(data=result)
+    return success_response(
+        data={
+            "id": str(result.id),
+            "name": result.name,
+            "parent_id": result.parent_id,
+            "type": result.type.value,
+        }
+    )
 
 
 @nodes_router_v1.post("/{node_id}/move")
-async def cut_node():
-    pass
+async def cut_node(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    node_id: uuid.UUID,
+    payload: MoveNodeSchema,
+    cache: CacheService = Depends(get_cache),
+):
+    result = await cut_node_service(
+        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
+    )
+    return success_response(
+        data={
+            "id": str(result.id),
+            "name": result.name,
+            "parent_id": result.parent_id,
+            "type": result.type.value,
+        }
+    )
 
 
 @nodes_router_v1.post("/{node_id}/copy")
-async def copy_node():
-    pass
+async def copy_node(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    node_id: uuid.UUID,
+    payload: CopyNodeSchema,
+    cache: CacheService = Depends(get_cache),
+):
+    result = await copy_node_service(
+        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
+    )
+    return success_response(
+        data={
+            "id": str(result.id),
+            "name": result.name,
+            "parent_id": result.parent_id,
+            "type": result.type.value,
+        }
+    )
 
 
 @nodes_router_v1.post(

@@ -14,12 +14,19 @@ from app.common.exceptions import (
     BadRequestException,
     NotFoundException,
 )
+from app.lib.copy_node_recursive import copy_node_recursive
 from app.lib.generate_unique_filename import generate_unique_filename
 from app.lib.is_descendant import is_descendant
 from app.models.node import Node, NodeType
 from app.models.starred_node import StarredNode
 from app.models.user import User
-from app.schemas.node import CreateNodeSchema, RenameNodeSchema, UpdateNodeSchema
+from app.schemas.node import (
+    CopyNodeSchema,
+    CreateNodeSchema,
+    MoveNodeSchema,
+    RenameNodeSchema,
+    UpdateNodeSchema,
+)
 from app.services.cache import CacheService
 from app.services.node_query import (
     apply_file_filter,
@@ -761,3 +768,155 @@ async def rename_node_service(
     await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
 
     return {"success": True}
+
+
+async def cut_node_service(
+    db: AsyncSession,
+    current_user: User,
+    node_id: uuid.UUID,
+    payload: MoveNodeSchema,
+    cache: CacheService,
+):
+    result = await db.execute(
+        select(Node).where(
+            Node.id == node_id,
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
+    )
+    node = result.scalar_one_or_none()
+    if not node:
+        raise NotFoundException("Node", str(node_id))
+
+    target_parent_id = payload.parent_id
+
+    if target_parent_id == node.parent_id:
+        return node
+
+    if target_parent_id == node.id:
+        raise BadRequestException(
+            "Cannot move node into itself",
+            details={
+                "target_parent_id": str(target_parent_id),
+            },
+        )
+
+    if target_parent_id is not None:
+        # prevent moving folder into descendants
+        is_invalid = await is_descendant(
+            db=db, node_id=node_id, target_id=target_parent_id
+        )
+        if is_invalid:
+            raise BadRequestException("Cannot move folder into its own descendant")
+
+        parent_query = select(Node).where(
+            Node.id == target_parent_id,
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
+        parent_result = await db.execute(parent_query)
+        parent = parent_result.scalar_one_or_none()
+        if not parent:
+            raise NotFoundException(
+                "Node",
+                str(target_parent_id),
+            )
+
+        if parent.type != NodeType.FOLDER:
+            raise BadRequestException(
+                "Target must be a folder",
+                details={
+                    "target_type": parent.type,
+                },
+            )
+
+    resolved_name = await generate_unique_filename(
+        db=db, owner_id=current_user.id, parent_id=target_parent_id, filename=node.name
+    )
+    old_parent_id = node.parent_id
+
+    node.parent_id = target_parent_id
+    node.name = resolved_name
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise AlreadyExistsException(
+            "Node",
+            "name",
+            resolved_name,
+        )
+
+    await db.refresh(node)
+
+    # invalidate node detail
+    await cache.delete(f"node:detail:user={current_user.id}:node={node.id}")
+    # invalidate old folder listing
+    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={old_parent_id}:*")
+    # invalidate new folder listing
+    await cache.flush_pattern(
+        f"nodes:user={current_user.id}:parent={target_parent_id}:*"
+    )
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+
+    return node
+
+
+async def copy_node_service(
+    db: AsyncSession,
+    current_user: User,
+    node_id: uuid.UUID,
+    payload: CopyNodeSchema,
+    cache: CacheService,
+):
+    result = await db.execute(
+        select(Node).where(
+            Node.id == node_id,
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
+    )
+    node = result.scalar_one_or_none()
+    if not node:
+        raise NotFoundException("Node", str(node_id))
+
+    target_parent_id = payload.parent_id
+    if target_parent_id is not None:
+        parent_result = await db.execute(
+            select(Node).where(
+                Node.id == target_parent_id,
+                Node.owner_id == current_user.id,
+                Node.deleted_at.is_(None),
+            )
+        )
+        parent = parent_result.scalar_one_or_none()
+        if not parent:
+            raise NotFoundException(
+                "Node",
+                str(target_parent_id),
+            )
+
+        if parent.type != NodeType.FOLDER:
+            raise BadRequestException(
+                "Target must be a folder",
+                details={
+                    "target_type": parent.type,
+                },
+            )
+
+    copied_node = await copy_node_recursive(
+        db=db, current_user=current_user, node=node, target_parent_id=target_parent_id
+    )
+    await db.commit()
+    await db.refresh(copied_node)
+
+    # invalidate folder cache
+    await cache.flush_pattern(
+        f"nodes:user={current_user.id}:parent={target_parent_id}:*"
+    )
+    # invalidate search cache
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+
+    return copied_node

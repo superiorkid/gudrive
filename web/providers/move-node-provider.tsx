@@ -23,6 +23,8 @@ export const MoveNodeContextProvider = ({
   const [nodeIds, setNodeIds] = useState<Array<string>>([])
   const [operation, setOperation] = useState<MoveOperation>(null)
 
+  console.log("node ids", nodeIds)
+
   const setCutNodes = (nodeIds: Array<string>) => {
     setOperation("cut")
     setNodeIds(nodeIds)

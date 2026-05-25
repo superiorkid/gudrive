@@ -14,6 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useCopyNode } from "@/hooks/apis/nodes/use-copy-node"
+import { useCutNode } from "@/hooks/apis/nodes/use-cut-node"
+import { useMoveNode } from "@/providers/move-node-provider"
+import { ClipboardPasteIcon, FilePlusIcon, FolderPlusIcon } from "lucide-react"
+import { useParams } from "next/navigation"
 import React, { useState } from "react"
 import CreateFolderForm from "./create-folder-form"
 import FileUploads from "./file-uploads"
@@ -34,6 +39,34 @@ enum Dialogs {
 const AppContext = ({ children }: Props) => {
   const [dialog, setDialog] = useState<Dialogs | null>(null)
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+  const { folderId } = useParams<{ folderId: string }>()
+
+  const { nodeIds, hasItems, operation, clearClipboard } = useMoveNode()
+
+  const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
+    nodeId: nodeIds.at(0) || "",
+    onSuccess: () => {
+      clearClipboard()
+    },
+  })
+  const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
+    nodeId: nodeIds.at(0) || "",
+    onSuccess: () => {
+      clearClipboard()
+    },
+  })
+
+  const handlePaste = (params: { newParentId?: string }) => {
+    if (!hasItems) return
+
+    if (operation == "cut") {
+      cutNodeMutation(params.newParentId)
+    }
+
+    if (operation === "copy") {
+      copyNodeMutation(params.newParentId)
+    }
+  }
 
   return (
     <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -42,17 +75,32 @@ const AppContext = ({ children }: Props) => {
           <FileUploads>{children}</FileUploads>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          <ContextMenuItem
+            disabled={!hasItems || cutNodePending || copyNodePending}
+            onClick={() => {
+              handlePaste({ newParentId: folderId })
+            }}
+          >
+            <ClipboardPasteIcon className="mr-2 size-4" />
+            Paste
+          </ContextMenuItem>
           <DialogTrigger
             asChild
             onClick={() => setDialog(Dialogs.createFolderDialog)}
           >
-            <ContextMenuItem>New Folder</ContextMenuItem>
+            <ContextMenuItem>
+              <FolderPlusIcon className="mr-2" />
+              New Folder
+            </ContextMenuItem>
           </DialogTrigger>
           <DialogTrigger
             asChild
             onClick={() => setDialog(Dialogs.uploadFileDialog)}
           >
-            <ContextMenuItem>Upload Files</ContextMenuItem>
+            <ContextMenuItem>
+              <FilePlusIcon className="mr-2" />
+              Upload Files
+            </ContextMenuItem>
           </DialogTrigger>
         </ContextMenuContent>
       </ContextMenu>

@@ -18,6 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCopyNode } from "@/hooks/apis/nodes/use-copy-node"
+import { useCutNode } from "@/hooks/apis/nodes/use-cut-node"
 import { useMoveNode } from "@/providers/move-node-provider"
 import {
   ClipboardPasteIcon,
@@ -77,20 +79,38 @@ const NodeActionDropdown = ({
   const displayMoveNodeMenu =
     pathname.includes("my-drive") || pathname.includes("folders")
 
-  const { nodeIds, hasItems, setCutNodes, setCopyNodes, clearClipboard } =
-    useMoveNode()
+  const {
+    nodeIds,
+    hasItems,
+    setCutNodes,
+    setCopyNodes,
+    operation,
+    clearClipboard,
+  } = useMoveNode()
 
-  // const { mutate: renameNodeMutation, isPending: renameNodePending } =
-  //   useRenameNode({
-  //     nodeId: nodeIds.at(0) || "",
-  //     onSuccess: () => {
-  //       setOpenDropdown(false)
-  //     },
-  //   })
+  const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
+    nodeId: nodeIds.at(0) || "",
+    onSuccess: () => {
+      clearClipboard()
+    },
+  })
+  const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
+    nodeId: nodeIds.at(0) || "",
+    onSuccess: () => {
+      clearClipboard()
+    },
+  })
 
-  const handlePaste = (newParentId?: string) => {
+  const handlePaste = (params: { newParentId?: string }) => {
     if (!hasItems) return
-    // moveNodeMutaion({ parentId: newParentId })
+
+    if (operation === "cut") {
+      cutNodeMutation(params.newParentId)
+    }
+
+    if (operation === "copy") {
+      copyNodeMutation(params.newParentId)
+    }
   }
 
   return (
@@ -169,6 +189,7 @@ const NodeActionDropdown = ({
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
+                    disabled={cutNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
                       setCutNodes([nodeId])
@@ -180,6 +201,7 @@ const NodeActionDropdown = ({
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
+                    disabled={copyNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
                       setCopyNodes([nodeId])
@@ -195,7 +217,7 @@ const NodeActionDropdown = ({
                       disabled={!hasItems}
                       onSelect={(e) => {
                         e.preventDefault()
-                        handlePaste(nodeId)
+                        handlePaste({ newParentId: nodeId })
                       }}
                     >
                       <ClipboardPasteIcon className="mr-2 size-4" />

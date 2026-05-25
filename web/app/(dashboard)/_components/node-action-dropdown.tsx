@@ -114,7 +114,14 @@ const NodeActionDropdown = ({
   }
 
   return (
-    <Dialog open={!!dialog}>
+    <Dialog
+      open={!!dialog}
+      onOpenChange={(open) => {
+        if (!open) {
+          setDialog(null)
+        }
+      }}
+    >
       <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
         <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
 
@@ -244,6 +251,9 @@ const NodeActionDropdown = ({
       </DropdownMenu>
 
       <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Rename</DialogTitle>
+        </DialogHeader>
         {dialog === Dialogs.renameDialog ? (
           <RenameNodeForm
             nodeId={nodeId}

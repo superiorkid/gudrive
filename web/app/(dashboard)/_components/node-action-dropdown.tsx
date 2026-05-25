@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useCopyNode } from "@/hooks/apis/nodes/use-copy-node"
 import { useCutNode } from "@/hooks/apis/nodes/use-cut-node"
-import { useMoveNode } from "@/providers/move-node-provider"
+import { useClipboard } from "@/providers/clipboard-provider"
+import { useNodeSelection } from "@/providers/node-selection-provider"
 import {
   ClipboardPasteIcon,
   CopyIcon,
@@ -73,29 +74,36 @@ const NodeActionDropdown = ({
   nodeType,
 }: Props) => {
   const [dialog, setDialog] = useState<Dialogs | null>(null)
-  const [openDropdown, setOpenDropdown] = useState<boolean>(false)
+  const [openDropdown, setOpenDropdown] = useState(false)
 
   const pathname = usePathname()
+
   const displayMoveNodeMenu =
     pathname.includes("my-drive") || pathname.includes("folders")
 
+  const { selectedNodeIds, selectSingleNode } = useNodeSelection()
+
   const {
-    nodeIds,
-    hasItems,
-    setCutNodes,
-    setCopyNodes,
+    clipboardNodeIds,
     operation,
+    hasItems,
+    cutNodes,
+    copyNodes,
     clearClipboard,
-  } = useMoveNode()
+  } = useClipboard()
+
+  const activeNodeIds =
+    selectedNodeIds.length > 0 && selectedNodeIds.includes(nodeId)
+      ? selectedNodeIds
+      : [nodeId]
 
   const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
-    nodeId: nodeIds.at(0) || "",
     onSuccess: () => {
       clearClipboard()
     },
   })
+
   const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
-    nodeId: nodeIds.at(0) || "",
     onSuccess: () => {
       clearClipboard()
     },
@@ -105,11 +113,17 @@ const NodeActionDropdown = ({
     if (!hasItems) return
 
     if (operation === "cut") {
-      cutNodeMutation(params.newParentId)
+      cutNodeMutation({
+        nodeIds: clipboardNodeIds,
+        parentId: params.newParentId,
+      })
     }
 
     if (operation === "copy") {
-      copyNodeMutation(params.newParentId)
+      copyNodeMutation({
+        nodeIds: clipboardNodeIds,
+        parentId: params.newParentId,
+      })
     }
   }
 
@@ -123,7 +137,21 @@ const NodeActionDropdown = ({
       }}
     >
       <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
-        <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+        <DropdownMenuTrigger asChild>
+          <div
+            onClick={(event) => {
+              event.stopPropagation()
+
+              // if current node not selected,
+              // make it selected first
+              if (!selectedNodeIds.includes(nodeId)) {
+                selectSingleNode(nodeId)
+              }
+            }}
+          >
+            {children}
+          </div>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="min-w-44">
           {isTrashPage ? (
@@ -141,11 +169,11 @@ const NodeActionDropdown = ({
 
               <DialogTrigger asChild>
                 <DropdownMenuItem
+                  className="text-destructive hover:text-destructive"
                   onSelect={(e) => {
                     e.preventDefault()
                     setDialog(Dialogs.forceDeleteDialog)
                   }}
-                  className="text-destructive hover:text-destructive"
                 >
                   <XCircleIcon className="mr-2 size-4" />
                   Delete Forever
@@ -172,11 +200,11 @@ const NodeActionDropdown = ({
               </DialogTrigger>
 
               <DropdownMenuItem
+                disabled={toggleStarPending}
                 onSelect={(e) => {
                   e.preventDefault()
                   toggleStarMutation(nodeId)
                 }}
-                disabled={toggleStarPending}
               >
                 {isStarred ? (
                   <>
@@ -199,7 +227,9 @@ const NodeActionDropdown = ({
                     disabled={cutNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-                      setCutNodes([nodeId])
+
+                      cutNodes(activeNodeIds)
+
                       setOpenDropdown(false)
                     }}
                   >
@@ -211,7 +241,9 @@ const NodeActionDropdown = ({
                     disabled={copyNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-                      setCopyNodes([nodeId])
+
+                      copyNodes(activeNodeIds)
+
                       setOpenDropdown(false)
                     }}
                   >
@@ -224,7 +256,10 @@ const NodeActionDropdown = ({
                       disabled={!hasItems}
                       onSelect={(e) => {
                         e.preventDefault()
-                        handlePaste({ newParentId: nodeId })
+
+                        handlePaste({
+                          newParentId: nodeId,
+                        })
                       }}
                     >
                       <ClipboardPasteIcon className="mr-2 size-4" />
@@ -251,42 +286,48 @@ const NodeActionDropdown = ({
       </DropdownMenu>
 
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rename</DialogTitle>
-        </DialogHeader>
         {dialog === Dialogs.renameDialog ? (
-          <RenameNodeForm
-            nodeId={nodeId}
-            onUpdateSuccess={() => {
-              setDialog(null)
-              setOpenDropdown(false)
-            }}
-          />
+          <>
+            <DialogHeader>
+              <DialogTitle>Rename</DialogTitle>
+            </DialogHeader>
+
+            <RenameNodeForm
+              nodeId={nodeId}
+              onUpdateSuccess={() => {
+                setDialog(null)
+                setOpenDropdown(false)
+              }}
+            />
+          </>
         ) : dialog === Dialogs.forceDeleteDialog ? (
           <>
             <DialogHeader>
               <DialogTitle>Delete Forever?</DialogTitle>
+
               <DialogDescription>
                 This File/Folder will be deleted forever. This cannot be undone.
               </DialogDescription>
             </DialogHeader>
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
                   Close
                 </Button>
               </DialogClose>
+
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => forceDeleteMutation(nodeId)}
                 disabled={forceDeleteNodePending}
+                onClick={() => forceDeleteMutation(nodeId)}
               >
                 Delete Forever
               </Button>
             </DialogFooter>
           </>
-        ) : undefined}
+        ) : null}
       </DialogContent>
     </Dialog>
   )

@@ -65,7 +65,11 @@ const NodeCard = ({
   return (
     <div
       onDoubleClick={() => handleNodeNavigation(node)}
+      onContextMenu={(event) => {
+        event.stopPropagation()
+      }}
       className={cn(
+        "z-50",
         node.type === "folder" ? "cursor-pointer" : "cursor-default"
       )}
     >

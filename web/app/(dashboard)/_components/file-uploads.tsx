@@ -278,7 +278,7 @@ const FileUploads = ({ children }: Props) => {
       >
         {children}
 
-        <div className="pointer-events-none absolute inset-0 z-50 hidden items-center justify-center rounded-lg border-4 border-dashed border-blue-500 bg-blue-500/20 backdrop-blur-sm transition-opacity duration-150 group-data-dragging:flex">
+        <div className="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center rounded-lg border-4 border-dashed border-blue-500 bg-blue-500/20 backdrop-blur-sm transition-opacity duration-150 group-data-dragging:flex">
           <div className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-2xl">
             Drop files to upload
           </div>

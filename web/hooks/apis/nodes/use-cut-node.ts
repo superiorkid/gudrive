@@ -3,10 +3,10 @@ import { moveNode } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export function useCutNode(params: { nodeId: string; onSuccess?: () => void }) {
+export function useCutNode(params: { onSuccess?: () => void }) {
   return useMutation({
-    mutationFn: (parentId?: string) =>
-      moveNode({ parentId, nodeId: params.nodeId }),
+    mutationFn: (params: { parentId?: string; nodeIds: Array<string> }) =>
+      moveNode({ parentId: params.parentId, nodeIds: params.nodeIds }),
     onError(error) {
       toast.error("Error move file/folder", {
         description: error.message || "There was an issue move file/folder.",

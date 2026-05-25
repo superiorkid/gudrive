@@ -91,6 +91,32 @@ async def get_nodes(
     return success_response(data=result)
 
 
+@nodes_router_v1.post("/move")
+async def cut_node(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    payload: MoveNodeSchema,
+    cache: CacheService = Depends(get_cache),
+):
+    await cut_node_service(
+        db=db, current_user=current_user, payload=payload, cache=cache
+    )
+    return success_response(data={"success": True})
+
+
+@nodes_router_v1.post("/copy")
+async def copy_node(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    payload: CopyNodeSchema,
+    cache: CacheService = Depends(get_cache),
+):
+    await copy_node_service(
+        db=db, current_user=current_user, payload=payload, cache=cache
+    )
+    return success_response(data={"success": True})
+
+
 @nodes_router_v1.get(
     "/{node_id}", dependencies=[Depends(rate_limit(limit=200, window=60))]
 )
@@ -153,48 +179,6 @@ async def rename_node(
     cache: CacheService = Depends(get_cache),
 ):
     result = await rename_node_service(
-        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
-    )
-    return success_response(
-        data={
-            "id": str(result.id),
-            "name": result.name,
-            "parent_id": result.parent_id,
-            "type": result.type.value,
-        }
-    )
-
-
-@nodes_router_v1.post("/{node_id}/move")
-async def cut_node(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    payload: MoveNodeSchema,
-    cache: CacheService = Depends(get_cache),
-):
-    result = await cut_node_service(
-        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
-    )
-    return success_response(
-        data={
-            "id": str(result.id),
-            "name": result.name,
-            "parent_id": result.parent_id,
-            "type": result.type.value,
-        }
-    )
-
-
-@nodes_router_v1.post("/{node_id}/copy")
-async def copy_node(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    payload: CopyNodeSchema,
-    cache: CacheService = Depends(get_cache),
-):
-    result = await copy_node_service(
         db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
     )
     return success_response(

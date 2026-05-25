@@ -256,18 +256,16 @@ export const renameNode = async (params: {
 }
 
 export const moveNode = async (params: {
-  nodeId: string
+  nodeIds: Array<string>
   parentId?: string
 }) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.post(
-      `/v1/nodes/${params.nodeId}/move`,
-      {
-        parent_id: params.parentId || "",
-      }
-    )
+    const response = await axiosInstance.post(`/v1/nodes/move`, {
+      parent_id: params.parentId,
+      node_ids: params.nodeIds,
+    })
     return response.data as ApiResponse<TNode>
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
@@ -285,18 +283,16 @@ export const moveNode = async (params: {
 }
 
 export const copyNode = async (params: {
-  nodeId: string
+  nodeIds: Array<string>
   parentId?: string
 }) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.post(
-      `/v1/nodes/${params.nodeId}/copy`,
-      {
-        parent_id: params.parentId || "",
-      }
-    )
+    const response = await axiosInstance.post(`/v1/nodes/copy`, {
+      parent_id: params.parentId,
+      node_ids: params.nodeIds,
+    })
     return response.data as ApiResponse<TNode>
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {

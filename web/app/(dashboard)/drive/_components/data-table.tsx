@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table"
 import { useDisplay } from "@/hooks/use-display"
 import { cn } from "@/lib/utils"
-import { useMoveNode } from "@/providers/move-node-provider"
+import { useClipboard } from "@/providers/clipboard-provider"
 import { TNode } from "@/types/node-type"
 import {
   ColumnDef,
@@ -49,10 +49,15 @@ export function DataTable<TData extends TNode, TValue>({
     }
   }
 
-  const { isNodeInClipboard } = useMoveNode()
+  const { isNodeInClipboard } = useClipboard()
 
   return (
-    <div className="overflow-hidden rounded-md border">
+    <div
+      className="overflow-hidden rounded-md border"
+      onContextMenu={(event) => {
+        event.stopPropagation()
+      }}
+    >
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

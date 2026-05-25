@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { useCopyNode } from "@/hooks/apis/nodes/use-copy-node"
 import { useCutNode } from "@/hooks/apis/nodes/use-cut-node"
-import { useMoveNode } from "@/providers/move-node-provider"
+import { useClipboard } from "@/providers/clipboard-provider"
 import { ClipboardPasteIcon, FilePlusIcon, FolderPlusIcon } from "lucide-react"
 import { useParams } from "next/navigation"
 import React, { useState } from "react"
@@ -41,16 +41,15 @@ const AppContext = ({ children }: Props) => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const { folderId } = useParams<{ folderId: string }>()
 
-  const { nodeIds, hasItems, operation, clearClipboard } = useMoveNode()
+  const { clipboardNodeIds, operation, hasItems, clearClipboard } =
+    useClipboard()
 
   const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
-    nodeId: nodeIds.at(0) || "",
     onSuccess: () => {
       clearClipboard()
     },
   })
   const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
-    nodeId: nodeIds.at(0) || "",
     onSuccess: () => {
       clearClipboard()
     },
@@ -60,11 +59,17 @@ const AppContext = ({ children }: Props) => {
     if (!hasItems) return
 
     if (operation == "cut") {
-      cutNodeMutation(params.newParentId)
+      cutNodeMutation({
+        nodeIds: clipboardNodeIds,
+        parentId: params.newParentId,
+      })
     }
 
     if (operation === "copy") {
-      copyNodeMutation(params.newParentId)
+      copyNodeMutation({
+        nodeIds: clipboardNodeIds,
+        parentId: params.newParentId,
+      })
     }
   }
 
@@ -74,7 +79,7 @@ const AppContext = ({ children }: Props) => {
         <ContextMenuTrigger>
           <FileUploads>{children}</FileUploads>
         </ContextMenuTrigger>
-        <ContextMenuContent>
+        <ContextMenuContent className="z-40">
           <ContextMenuItem
             disabled={!hasItems || cutNodePending || copyNodePending}
             onClick={() => {

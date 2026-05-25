@@ -3,13 +3,10 @@ import { copyNode } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export function useCopyNode(params: {
-  nodeId: string
-  onSuccess?: () => void
-}) {
+export function useCopyNode(params: { onSuccess?: () => void }) {
   return useMutation({
-    mutationFn: (parentId?: string) =>
-      copyNode({ parentId, nodeId: params.nodeId }),
+    mutationFn: (params: { parentId?: string; nodeIds: Array<string> }) =>
+      copyNode({ parentId: params.parentId, nodeIds: params.nodeIds }),
     onError(error) {
       toast.error("Error copy file/folder", {
         description: error.message || "There was an issue copy file/folder.",

@@ -20,10 +20,12 @@ class RenameNodeSchema(BaseModel):
 
 
 class MoveNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]
     parent_id: Optional[uuid.UUID] = None
 
 
 class CopyNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]
     parent_id: Optional[uuid.UUID] = None
 
 

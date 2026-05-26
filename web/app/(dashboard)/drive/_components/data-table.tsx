@@ -20,6 +20,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { usePathname, useRouter } from "next/navigation"
+import { useRef } from "react"
 import NoItemsView from "../../_components/no-items-view"
 
 interface DataTableProps<TData extends TNode, TValue> {
@@ -31,6 +32,8 @@ export function DataTable<TData extends TNode, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const { push } = useRouter()
   const pathname = usePathname()
   const [display] = useDisplay()
@@ -91,7 +94,12 @@ export function DataTable<TData extends TNode, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={isCurrentSelected && "selected"}
-                  onDoubleClick={() => handleNodeNavigation(row.original)}
+                  onDoubleClick={() => {
+                    if (clickTimeoutRef.current)
+                      clearTimeout(clickTimeoutRef.current)
+
+                    handleNodeNavigation(row.original)
+                  }}
                   className={cn(
                     "transition-colors select-none",
                     row.original.type === "folder"
@@ -109,11 +117,16 @@ export function DataTable<TData extends TNode, TValue>({
                       return
                     }
 
-                    if (!isCurrentSelected) {
-                      selectSingleNode(row.original.id)
-                    } else {
-                      toggleSelectedNode(row.original.id)
-                    }
+                    if (clickTimeoutRef.current)
+                      clearTimeout(clickTimeoutRef.current)
+
+                    clickTimeoutRef.current = setTimeout(() => {
+                      if (!isCurrentSelected) {
+                        selectSingleNode(row.original.id)
+                      } else {
+                        toggleSelectedNode(row.original.id)
+                      }
+                    }, 200)
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (

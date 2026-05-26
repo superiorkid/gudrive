@@ -17,6 +17,7 @@ import {
 import { useCopyNode } from "@/hooks/apis/nodes/use-copy-node"
 import { useCutNode } from "@/hooks/apis/nodes/use-cut-node"
 import { useClipboard } from "@/providers/clipboard-provider"
+import { useNodeSelection } from "@/providers/node-selection-provider"
 import { ClipboardPasteIcon, FilePlusIcon, FolderPlusIcon } from "lucide-react"
 import { useParams } from "next/navigation"
 import React, { useState } from "react"
@@ -44,14 +45,18 @@ const AppContext = ({ children }: Props) => {
   const { clipboardNodeIds, operation, hasItems, clearClipboard } =
     useClipboard()
 
+  const { clearSelection } = useNodeSelection()
+
   const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
     onSuccess: () => {
       clearClipboard()
+      clearSelection()
     },
   })
   const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
     onSuccess: () => {
       clearClipboard()
+      clearSelection()
     },
   })
 

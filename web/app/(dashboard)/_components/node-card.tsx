@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useRef } from "react"
 import NodeActionDropdown from "./node-action-dropdown"
 
 type Props = {
@@ -42,6 +43,8 @@ const NodeCard = ({
   isMixedView,
   isStarred,
 }: Props) => {
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const { push } = useRouter()
   const [display] = useDisplay()
   const searchParams = new URLSearchParams({ display })
@@ -73,7 +76,10 @@ const NodeCard = ({
 
   return (
     <Card
-      onDoubleClick={() => handleNodeNavigation(node)}
+      onDoubleClick={() => {
+        if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current)
+        handleNodeNavigation(node)
+      }}
       onContextMenu={(event) => {
         event.stopPropagation()
       }}
@@ -90,11 +96,14 @@ const NodeCard = ({
           return
         }
 
-        if (!isCurrentSelected) {
-          selectSingleNode(node.id)
-        } else {
-          toggleSelectedNode(node.id)
-        }
+        if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current)
+        clickTimeoutRef.current = setTimeout(() => {
+          if (!isCurrentSelected) {
+            selectSingleNode(node.id)
+          } else {
+            toggleSelectedNode(node.id)
+          }
+        }, 200)
       }}
     >
       <CardHeader className="flex flex-row items-center justify-between gap-2">

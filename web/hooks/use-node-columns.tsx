@@ -8,11 +8,11 @@ import { TNode } from "@/types/node-type"
 import { ColumnDef } from "@tanstack/react-table"
 import { HardDriveIcon, MoreHorizontalIcon, StarIcon } from "lucide-react"
 import { useMemo } from "react"
+import { useForceDeleteNode } from "./apis/nodes/use-force-delete-node"
 import { useRestoreNode } from "./apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "./apis/nodes/use-soft-delete-node"
 import { useToggleStar } from "./apis/nodes/use-toggle-star"
 import { useSortBy } from "./use-sort-by"
-import { useForceDeleteNode } from "./apis/nodes/use-force-delete-node"
 
 type TableVariant = "default" | "trash" | "starred"
 
@@ -31,7 +31,9 @@ export const useNodeColumns = (variant: TableVariant = "default") => {
               <div className="size-5 shrink-0">
                 {getFileIcon(type, mime_type || "")}
               </div>
-              <span className="truncate font-medium">{name}</span>
+              <span className="max-w-sm truncate font-medium 2xl:max-w-md">
+                {name}
+              </span>
               {is_starred && <StarIcon className="size-3 fill-foreground" />}
             </div>
           )

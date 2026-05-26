@@ -165,7 +165,7 @@ Planned improvements:
 ### Missing Features
 
 - ~~Permanent delete~~
-- Move file/folder operation
+- ~~Move file/folder operation~~
 - File sharing system
 - Public share links
 - Shared folders

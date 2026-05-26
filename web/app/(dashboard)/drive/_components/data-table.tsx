@@ -113,7 +113,11 @@ export function DataTable<TData extends TNode, TValue>({
                     event.stopPropagation()
 
                     if (event.ctrlKey || event.metaKey) {
-                      toggleSelectedNode(row.original.id)
+                      toggleSelectedNode({
+                        id: row.original.id,
+                        isStarred: row.original.is_starred,
+                        type: row.original.type,
+                      })
                       return
                     }
 
@@ -122,9 +126,17 @@ export function DataTable<TData extends TNode, TValue>({
 
                     clickTimeoutRef.current = setTimeout(() => {
                       if (!isCurrentSelected) {
-                        selectSingleNode(row.original.id)
+                        selectSingleNode({
+                          id: row.original.id,
+                          isStarred: row.original.is_starred,
+                          type: row.original.type,
+                        })
                       } else {
-                        toggleSelectedNode(row.original.id)
+                        toggleSelectedNode({
+                          id: row.original.id,
+                          isStarred: row.original.is_starred,
+                          type: row.original.type,
+                        })
                       }
                     }, 200)
                   }}

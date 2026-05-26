@@ -3,9 +3,9 @@ import { forceDelete } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export function useForceDeleteNode() {
+export function useForceDeleteNode(params?: { onSuccess?: () => void }) {
   return useMutation({
-    mutationFn: (nodeId: string) => forceDelete(nodeId),
+    mutationFn: (nodeIds: Array<string>) => forceDelete(nodeIds),
     onError(error) {
       toast.error("Error Permanently Delete file/folder", {
         description:
@@ -19,6 +19,7 @@ export function useForceDeleteNode() {
       })
       context.client.invalidateQueries({ queryKey: nodeKeys.lists() })
       context.client.invalidateQueries({ queryKey: statKeys.overview() })
+      params?.onSuccess?.()
     },
   })
 }

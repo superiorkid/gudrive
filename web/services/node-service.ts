@@ -109,11 +109,13 @@ export const createNode = async (params: {
   }
 }
 
-export const deleteNode = async (nodeId: string) => {
+export const deleteNode = async (nodeIds: Array<string>) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.delete(`/v1/nodes/${nodeId}`)
+    const response = await axiosInstance.delete(`/v1/nodes/bulk-delete`, {
+      data: { node_ids: nodeIds },
+    })
     return response.data as ApiResponse<{ ok: boolean }>
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -130,11 +132,13 @@ export const deleteNode = async (nodeId: string) => {
   }
 }
 
-export const restoreNode = async (nodeId: string) => {
+export const restoreNode = async (nodeIds: Array<string>) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.post(`/v1/nodes/${nodeId}/restore`)
+    const response = await axiosInstance.post(`/v1/nodes/bulk-restore`, {
+      node_ids: nodeIds,
+    })
     return response.data as ApiResponse<{ ok: boolean }>
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -151,11 +155,13 @@ export const restoreNode = async (nodeId: string) => {
   }
 }
 
-export const toggleStar = async (nodeId: string) => {
+export const toggleStar = async (nodeIds: Array<string>) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.post(`/v1/nodes/${nodeId}/starred`)
+    const response = await axiosInstance.post(`/v1/nodes/bulk-starred`, {
+      node_ids: nodeIds,
+    })
     return response.data as ApiResponse<{
       node_id: string
       is_starred: boolean
@@ -207,11 +213,13 @@ export const updateNode = async (params: {
   }
 }
 
-export const forceDelete = async (nodeId: string) => {
+export const forceDelete = async (nodeIds: Array<string>) => {
   const axiosInstance = await createAxiosInstance()
 
   try {
-    const response = await axiosInstance.delete(`/v1/nodes/${nodeId}/force`)
+    const response = await axiosInstance.delete(`/v1/nodes/bulk-force-delete`, {
+      data: { node_ids: nodeIds },
+    })
     return response.data as ApiResponse<{ deleted: number; node_id: string }>
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {

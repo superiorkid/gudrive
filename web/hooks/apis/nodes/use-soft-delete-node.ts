@@ -3,9 +3,9 @@ import { deleteNode } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export function useSoftDeleteNode() {
+export function useSoftDeleteNode(params?: { onSuccess?: () => void }) {
   return useMutation({
-    mutationFn: (nodeId: string) => deleteNode(nodeId),
+    mutationFn: (nodeIds: Array<string>) => deleteNode(nodeIds),
     onError(error) {
       toast.error("Error move file/folder to trash", {
         description:
@@ -17,6 +17,7 @@ export function useSoftDeleteNode() {
         description: "Your file/folder has been moved to trash successfully.",
       })
       context.client.invalidateQueries({ queryKey: nodeKeys.lists() })
+      params?.onSuccess?.()
     },
   })
 }

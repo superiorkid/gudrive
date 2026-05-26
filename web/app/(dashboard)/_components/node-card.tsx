@@ -57,7 +57,7 @@ const NodeCard = ({
     useForceDeleteNode()
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
-    useToggleStar(isStarred)
+    useToggleStar()
 
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder") {
@@ -92,16 +92,16 @@ const NodeCard = ({
       onClick={(event) => {
         event.stopPropagation()
         if (event.ctrlKey || event.metaKey) {
-          toggleSelectedNode(node.id)
+          toggleSelectedNode({ id: node.id, isStarred, type: node.type })
           return
         }
 
         if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current)
         clickTimeoutRef.current = setTimeout(() => {
           if (!isCurrentSelected) {
-            selectSingleNode(node.id)
+            selectSingleNode({ id: node.id, isStarred, type: node.type })
           } else {
-            toggleSelectedNode(node.id)
+            toggleSelectedNode({ id: node.id, isStarred, type: node.type })
           }
         }, 200)
       }}

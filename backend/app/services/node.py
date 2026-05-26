@@ -21,6 +21,10 @@ from app.models.node import Node, NodeType
 from app.models.starred_node import StarredNode
 from app.models.user import User
 from app.schemas.node import (
+    BulkDeleteNodeSchema,
+    BulkForceDeleteNodeSchema,
+    BulkRestoreNodeSchema,
+    BulkToggleStarNodeSchema,
     CopyNodeSchema,
     CreateNodeSchema,
     MoveNodeSchema,
@@ -429,28 +433,40 @@ async def update_node_service(
 
 
 async def delete_node_service(
-    db: AsyncSession, current_user: User, node_id: uuid.UUID, cache: CacheService
+    payload: BulkDeleteNodeSchema,
+    db: AsyncSession,
+    current_user: User,
+    cache: CacheService,
 ):
-    query = select(Node).where(
-        Node.id == node_id, Node.owner_id == current_user.id, Node.deleted_at.is_(None)
+    if not payload.node_ids:
+        return {"success": True}
+
+    result = await db.execute(
+        select(Node).where(
+            Node.id.in_(payload.node_ids),
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
     )
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
+    nodes = result.scalars().all()
 
-    if not node:
-        raise NotFoundException("Node", str(node_id))
+    if len(nodes) != len(payload.node_ids):
+        found_ids = {n.id for n in nodes}
+        missing_ids = [str(nid) for nid in payload.node_ids if nid not in found_ids]
+        raise NotFoundException("Node(s)", ", ".join(missing_ids))
 
-    parent_id = node.parent_id
+    parent_ids = {node.parent_id for node in nodes}
 
     descendants_cte = (
         select(Node.id)
-        .where(Node.id == node_id)
+        .where(Node.id.in_(payload.node_ids))
         .cte(name="descendants", recursive=True)
     )
     descendants_alias = descendants_cte.alias()
     descendants_cte = descendants_cte.union_all(
         select(Node.id).where(Node.parent_id == descendants_alias.c.id)
     )
+
     await db.execute(
         update(Node)
         .where(Node.id.in_(select(descendants_cte.c.id)))
@@ -458,97 +474,108 @@ async def delete_node_service(
     )
     await db.commit()
 
-    # invalidate folder listing
-    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={parent_id}:*")
-    # invalidate trash listing
-    await cache.flush_pattern(f"nodes:user={current_user.id}:*status=trashed*")
-    # invalidate search cache
-    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
-    # invalidate node detail
-    await cache.delete(f"node:detail:user={current_user.id}:node={node_id}")
-    # invalidate parent detail (children_count changed)
-    if parent_id:
-        await cache.delete(f"node:detail:user={current_user.id}:node={parent_id}")
+    # Invalidate old parent folder layout counts
+    for p_id in parent_ids:
+        await cache.flush_pattern(f"nodes:user={current_user.id}:parent={p_id}:*")
+        if p_id:
+            await cache.delete(f"node:detail:user={current_user.id}:node={p_id}")
 
-    return {
-        "success": True,
-    }
+    # Invalidate individual details for the targeted parent nodes
+    for nid in payload.node_ids:
+        await cache.delete(f"node:detail:user={current_user.id}:node={nid}")
+
+    # Invalidate global trash grid layouts and search results
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*status=trashed*")
+    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
+
+    return {"success": True}
 
 
 async def restore_node_service(
-    db: AsyncSession, current_user: User, node_id: uuid.UUID, cache: CacheService
+    payload: BulkRestoreNodeSchema,
+    db: AsyncSession,
+    current_user: User,
+    cache: CacheService,
 ):
-    query = select(Node).where(
-        Node.id == node_id,
-        Node.owner_id == current_user.id,
-        Node.deleted_at.is_not(None),
-    )
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
+    if not payload.node_ids:
+        return {"success": True}
 
-    if not node:
-        raise NotFoundException("Node", str(node_id))
-
-    parent_id = node.parent_id
-
-    if parent_id:
-        query = select(Node).where(
-            Node.id == node.parent_id, Node.owner_id == current_user.id
+    result = await db.execute(
+        select(Node).where(
+            Node.id.in_(payload.node_ids),
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_not(None),
         )
-        result = await db.execute(query)
-        parent = result.scalar_one_or_none()
-
-        if not parent or parent.deleted_at is not None:
-            raise BadRequestException(
-                "Cannot restore: parent folder no longer exists or is deleted"
-            )
-
-    query = select(Node).where(
-        Node.parent_id == node.parent_id,
-        Node.owner_id == current_user.id,
-        Node.name == node.name,
-        Node.deleted_at.is_(None),
     )
-    result = await db.execute(query)
-    conflict = result.scalar_one_or_none()
+    nodes = result.scalars().all()
 
-    if conflict:
-        raise AlreadyExistsException("Node", "name", node.name)
+    if len(nodes) != len(payload.node_ids):
+        found_ids = {n.id for n in nodes}
+        missing_ids = [str(nid) for nid in payload.node_ids if nid not in found_ids]
+        raise NotFoundException("Node(s)", ", ".join(missing_ids))
 
-    # recursive restore
+    parent_ids = {node.parent_id for node in nodes}
+    non_root_parent_ids = [p_id for p_id in parent_ids if p_id is not None]
+    if non_root_parent_ids:
+        parent_result = await db.execute(
+            select(Node).where(
+                Node.id.in_(non_root_parent_ids), Node.owner_id == current_user.id
+            )
+        )
+        parents = {p.id: p for p in parent_result.scalars().all()}
+
+        for node in nodes:
+            if node.parent_id is not None:
+                parent = parents.get(node.parent_id)
+                if not parent or parent.deleted_at is not None:
+                    raise BadRequestException(
+                        f"Cannot restore '{node.name}': parent folder no longer exists or is deleted"
+                    )
+
+    conflict_conditions = [
+        (Node.parent_id == node.parent_id) & (Node.name == node.name) for node in nodes
+    ]
+    conflict_result = await db.execute(
+        select(Node).where(
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+            or_(*conflict_conditions),
+        )
+    )
+    conflict_node = conflict_result.scalar_one_or_none()
+    if conflict_node:
+        raise AlreadyExistsException("Node", "name", conflict_node.name)
+
     descendants_cte = (
         select(Node.id)
-        .where(Node.id == node.id)
+        .where(Node.id.in_(payload.node_ids))
         .cte(name="descendants", recursive=True)
     )
     descendants_alias = descendants_cte.alias()
     descendants_cte = descendants_cte.union_all(
         select(Node.id).where(Node.parent_id == descendants_alias.c.id)
     )
-
-    # fetch descendant ids for cache invalidation
-    descendant_ids_result = await db.execute(select(descendants_cte.c.id))
-    descendant_ids = descendant_ids_result.scalars().all()
+    descendants_ids_result = await db.execute(select(descendants_cte.c.id))
+    descendant_ids = descendants_ids_result.scalars().all()
 
     await db.execute(
-        update(Node)
-        .where(Node.id.in_(select(descendants_cte.c.id)))
-        .values(deleted_at=None)
+        update(Node).where(Node.id.in_(descendant_ids)).values(deleted_at=None)
     )
     await db.commit()
 
-    # invalidate folder listing
-    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={parent_id}:*")
-    # invalidate trash listing
+    # Clear directory layout index pools for affected scopes
+    for p_id in parent_ids:
+        await cache.flush_pattern(f"nodes:user={current_user.id}:parent={p_id}:*")
+        if p_id:
+            await cache.delete(f"node:detail:user={current_user.id}:node={p_id}")
+
+    # Evict detailed definitions for all processed child records
+    for d_id in descendant_ids:
+        await cache.delete(f"node:detail:user={current_user.id}:node={d_id}")
+
+    # Wipe trash boards and global keyword indexes
     await cache.flush_pattern(f"nodes:user={current_user.id}:*status=trashed*")
-    # invalidate search cache
     await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
-    # invalidate restored node details
-    for descendant_id in descendant_ids:
-        await cache.delete(f"node:detail:user={current_user.id}:node={descendant_id}")
-    # invalidate parent detail (children_count changed)
-    if parent_id:
-        await cache.delete(f"node:detail:user={current_user.id}:node={parent_id}")
 
     return {"success": True}
 
@@ -556,100 +583,111 @@ async def restore_node_service(
 async def toggle_star_service(
     db: AsyncSession,
     current_user: User,
-    node_id: uuid.UUID,
+    payload: BulkToggleStarNodeSchema,
     cache: CacheService,
 ):
-    query = select(Node).where(
-        Node.id == node_id,
-        Node.owner_id == current_user.id,
-        Node.deleted_at.is_(None),
+    if not payload.node_ids:
+        return {"node_ids": [], "is_starred": False}
+
+    result = await db.execute(
+        select(Node).where(
+            Node.id.in_(payload.node_ids),
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
     )
+    nodes = result.scalars().all()
 
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
+    if len(nodes) != len(payload.node_ids):
+        found_ids = {n.id for n in nodes}
+        missing_ids = [str(nid) for nid in payload.node_ids if nid not in found_ids]
+        raise NotFoundException("Node(s)", ", ".join(missing_ids))
 
-    if not node:
-        raise NotFoundException("Node", str(node_id))
-
-    query = select(StarredNode).where(
-        StarredNode.user_id == current_user.id,
-        StarredNode.node_id == node_id,
+    parent_ids = {node.parent_id for node in nodes}
+    starred_result = await db.execute(
+        select(StarredNode.node_id).where(
+            StarredNode.user_id == current_user.id,
+            StarredNode.node_id.in_(payload.node_ids),
+        )
     )
+    already_starred_ids = set(starred_result.scalars().all())
 
-    result = await db.execute(query)
-    existing = result.scalar_one_or_none()
+    has_unstarred_items = len(already_starred_ids) < len(payload.node_ids)
+    target_star_state = True if has_unstarred_items else False
 
-    is_starred = False
-
-    if existing:
+    if target_star_state:
+        # star
+        nodes_to_star = [
+            nid for nid in payload.node_ids if nid not in already_starred_ids
+        ]
+        for nid in nodes_to_star:
+            db.add(StarredNode(user_id=current_user.id, node_id=nid))
+    else:
+        # unstar
         await db.execute(
             delete(StarredNode).where(
                 StarredNode.user_id == current_user.id,
-                StarredNode.node_id == node_id,
+                StarredNode.node_id.in_(payload.node_ids),
             )
         )
-
-        is_starred = False
-
-    else:
-        db.add(
-            StarredNode(
-                user_id=current_user.id,
-                node_id=node_id,
-            )
-        )
-
-        is_starred = True
 
     try:
         await db.commit()
-
     except IntegrityError:
         await db.rollback()
-
-        raise AlreadyExistsException(
-            "StarredNode",
-            "node_id",
-            str(node_id),
+        raise BadRequestException(
+            "A transaction conflict occurred while updating star statuses."
         )
 
+    # Optimized Batch Cache Invalidation Operations
     await cache.delete(f"statistics:user={current_user.id}")
-    # invalidate starred listing
+    # Invalidate starred pages views
     await cache.flush_pattern(f"nodes:user={current_user.id}:*scope=starred*")
-    # invalidate folder listing
-    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={node.parent_id}:*")
-    # invalidate search cache
+    # Invalidate search keywords cache
     await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
-    # invalidate node detail
-    await cache.delete(f"node:detail:user={current_user.id}:node={node_id}")
+    # Invalidate parent listings folders affected by item metadata state adjustments
+    for p_id in parent_ids:
+        await cache.flush_pattern(f"nodes:user={current_user.id}:parent={p_id}:*")
+    # Invalidate node entry details records specifically targeting items changed
+    for nid in payload.node_ids:
+        await cache.delete(f"node:detail:user={current_user.id}:node={nid}")
 
     return {
-        "node_id": str(node_id),
-        "is_starred": is_starred,
+        "node_ids": [str(nid) for nid in payload.node_ids],
+        "is_starred": target_star_state,
     }
 
 
 async def force_delete_service(
-    current_user: User, db: AsyncSession, node_id: uuid.UUID, cache: CacheService
+    current_user: User,
+    db: AsyncSession,
+    payload: BulkForceDeleteNodeSchema,
+    cache: CacheService,
 ):
-    query = select(Node).where(
-        Node.id == node_id,
-        Node.deleted_at.is_not(None),
-        Node.owner_id == current_user.id,
+    if not payload.node_ids:
+        return {"deleted": 0, "node_ids": []}
+
+    result = await db.execute(
+        select(Node).where(
+            Node.id.in_(payload.node_ids),
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_not(None),
+        )
     )
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
+    root_nodes = result.scalars().all()
 
-    nodes_to_delete: list[Node] = []
+    if len(root_nodes) != len(payload.node_ids):
+        found_ids = {n.id for n in root_nodes}
+        missing_ids = [str(nid) for nid in payload.node_ids if nid not in found_ids]
+        raise NotFoundException("Node(s) in Trash", ", ".join(missing_ids))
 
-    if not node:
-        raise NotFoundException("Node", str(node_id))
+    nodes_to_delete: list[Node] = list(root_nodes)
 
-    if node.type == NodeType.FOLDER:
-        # recursive get all descendant
+    folder_ids = [node.id for node in root_nodes if node.type == NodeType.FOLDER]
+    if folder_ids:
         descendants_cte = (
             select(Node)
-            .where(Node.parent_id == node.id, Node.owner_id == current_user.id)
+            .where(Node.parent_id.in_(folder_ids), Node.owner_id == current_user.id)
             .cte(name="descendants", recursive=True)
         )
         descendants_alias = descendants_cte.alias()
@@ -665,27 +703,23 @@ async def force_delete_service(
         descendants = descendants_result.scalars().all()
         nodes_to_delete.extend(descendants)
 
-    nodes_to_delete.append(node)
-
     for item in nodes_to_delete:
         if item.type != NodeType.FILE:
             continue
 
-        if not item.storage_path:
-            continue
-
-        try:
-            if os.path.exists(item.storage_path):
-                os.remove(item.storage_path)
-        except OSError as e:
-            raise AppException(
-                error_code="FILE_DELETE_FAILED",
-                message=f"Failed to delete file: {str(e)}",
-                details={
-                    "node_id": str(item.id),
-                    "path": item.storage_path,
-                },
-            )
+        if item.storage_path:
+            try:
+                if os.path.exists(item.storage_path):
+                    os.remove(item.storage_path)
+            except OSError as e:
+                raise AppException(
+                    error_code="FILE_DELETE_FAILED",
+                    message=f"Failed to delete file from storage: {str(e)}",
+                    details={
+                        "node_id": str(item.id),
+                        "path": item.storage_path,
+                    },
+                )
 
         if item.preview_url:
             try:
@@ -694,9 +728,8 @@ async def force_delete_service(
             except OSError:
                 pass
 
-    for item in nodes_to_delete:
-        await db.delete(item)
-
+    all_deleted_ids = [item.id for item in nodes_to_delete]
+    await db.execute(delete(Node).where(Node.id.in_(all_deleted_ids)))
     await db.commit()
 
     await cache.delete(f"statistics:user={current_user.id}")
@@ -705,7 +738,7 @@ async def force_delete_service(
 
     return {
         "deleted": len(nodes_to_delete),
-        "node_id": str(node.id),
+        "node_ids": [str(nid) for nid in payload.node_ids],
     }
 
 

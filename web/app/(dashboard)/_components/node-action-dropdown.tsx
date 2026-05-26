@@ -42,14 +42,17 @@ type Props = {
   nodeId: string
   isTrashPage: boolean
   restoreNodePending: boolean
-  restoreNodeMutation: (nodeId: string) => void
+  restoreNodeMutation: (nodeIds: Array<string>) => void
   softDeleteNodePending: boolean
-  softDeleteMutation: (nodeId: string) => void
+  softDeleteMutation: (nodeId: Array<string>) => void
   isStarred: boolean
   toggleStarPending: boolean
-  toggleStarMutation: (nodeId: string) => void
+  toggleStarMutation: (params: {
+    nodeIds: Array<string>
+    allSelectedAreStarred: boolean
+  }) => void
   forceDeleteNodePending: boolean
-  forceDeleteMutation: (nodeId: string) => void
+  forceDeleteMutation: (nodeIds: Array<string>) => void
   nodeType: "folder" | "file"
 }
 
@@ -143,7 +146,11 @@ const NodeActionDropdown = ({
               event.stopPropagation()
 
               if (!selectedNodeIds.includes(nodeId)) {
-                selectSingleNode(nodeId)
+                selectSingleNode({
+                  id: nodeId,
+                  isStarred: isStarred,
+                  type: nodeType,
+                })
               }
             }}
           >
@@ -158,7 +165,7 @@ const NodeActionDropdown = ({
                 disabled={restoreNodePending}
                 onSelect={(e) => {
                   e.preventDefault()
-                  restoreNodeMutation(nodeId)
+                  restoreNodeMutation(selectedNodeIds)
                 }}
               >
                 <TimerResetIcon className="mr-2 size-4" />
@@ -201,7 +208,10 @@ const NodeActionDropdown = ({
                 disabled={toggleStarPending}
                 onSelect={(e) => {
                   e.preventDefault()
-                  toggleStarMutation(nodeId)
+                  toggleStarMutation({
+                    nodeIds: [nodeId],
+                    allSelectedAreStarred: isStarred,
+                  })
                 }}
               >
                 {isStarred ? (
@@ -268,7 +278,7 @@ const NodeActionDropdown = ({
                 disabled={softDeleteNodePending}
                 onSelect={(e) => {
                   e.preventDefault()
-                  softDeleteMutation(nodeId)
+                  softDeleteMutation(activeNodeIds)
                 }}
               >
                 <TrashIcon className="mr-2 size-4" />
@@ -315,7 +325,7 @@ const NodeActionDropdown = ({
                 type="button"
                 variant="destructive"
                 disabled={forceDeleteNodePending}
-                onClick={() => forceDeleteMutation(nodeId)}
+                onClick={() => forceDeleteMutation(selectedNodeIds)}
               >
                 Delete Forever
               </Button>

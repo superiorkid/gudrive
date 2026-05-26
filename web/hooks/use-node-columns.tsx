@@ -119,7 +119,7 @@ function ActionRow({
     useForceDeleteNode()
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
-    useToggleStar(isStarred)
+    useToggleStar()
 
   return (
     <div

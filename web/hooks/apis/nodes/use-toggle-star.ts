@@ -3,28 +3,50 @@ import { toggleStar } from "@/services/node-service"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export function useToggleStar(isStarred: boolean) {
+export function useToggleStar(params?: { onSuccess?: () => void }) {
   return useMutation({
-    mutationFn: (nodeId: string) => toggleStar(nodeId),
-    onError(error) {
+    mutationFn: async ({
+      nodeIds,
+    }: {
+      nodeIds: Array<string>
+      allSelectedAreStarred: boolean
+    }) => {
+      return toggleStar(nodeIds)
+    },
+
+    onError(error, variables) {
       toast.error(
-        `${isStarred ? "Unstar Folder/File" : "Starred Folder/File"} failed`,
+        variables.allSelectedAreStarred
+          ? "Remove from Starred failed"
+          : "Add to Starred failed",
         {
           description:
-            error.message ||
-            `There was an issue ${isStarred ? "Unstar" : "Starred"}. File/Folder`,
+            error.message || "There was an issue updating starred items.",
         }
       )
     },
-    onSuccess(_data, _variables, _onMutateResult, context) {
+
+    onSuccess(data, variables, _onMutateResult, context) {
       toast.success(
-        `${isStarred ? "Unstart" : "Starred"} File/Folder successfull`,
+        variables.allSelectedAreStarred
+          ? "Removed from Starred"
+          : "Added to Starred",
         {
-          description: `Your file/folder has been ${isStarred ? "unstar" : "starred"} successfully.`,
+          description: variables.allSelectedAreStarred
+            ? "Selected items were removed from starred."
+            : "Selected items were added to starred.",
         }
       )
-      context.client.invalidateQueries({ queryKey: nodeKeys.lists() })
-      context.client.invalidateQueries({ queryKey: statKeys.overview() })
+
+      context.client.invalidateQueries({
+        queryKey: nodeKeys.lists(),
+      })
+
+      context.client.invalidateQueries({
+        queryKey: statKeys.overview(),
+      })
+
+      params?.onSuccess?.()
     },
   })
 }

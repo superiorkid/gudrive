@@ -10,10 +10,13 @@ from app.api.deps import (
     get_current_active_user,
     rate_limit,
 )
-from app.core.config import Settings, get_configs
 from app.lib.success_response import success_response
 from app.models.user import User
 from app.schemas.node import (
+    BulkDeleteNodeSchema,
+    BulkForceDeleteNodeSchema,
+    BulkRestoreNodeSchema,
+    BulkToggleStarNodeSchema,
     CopyNodeSchema,
     CreateNodeSchema,
     MoveNodeSchema,
@@ -117,6 +120,64 @@ async def copy_node(
     return success_response(data={"success": True})
 
 
+@nodes_router_v1.delete(
+    "/bulk-delete", dependencies=[Depends(rate_limit(limit=20, window=60))]
+)
+async def delete_node(
+    payload: BulkDeleteNodeSchema,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
+):
+    await delete_node_service(
+        payload=payload, db=db, current_user=current_user, cache=cache
+    )
+    return success_response(data={"ok": True})
+
+
+@nodes_router_v1.delete("/bulk-force-delete")
+async def force_delete(
+    payload: BulkForceDeleteNodeSchema,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
+):
+    result = await force_delete_service(
+        current_user=current_user, db=db, payload=payload, cache=cache
+    )
+    return success_response(data=result)
+
+
+@nodes_router_v1.post(
+    "/bulk-restore", dependencies=[Depends(rate_limit(limit=20, window=60))]
+)
+async def restore_node(
+    payload: BulkRestoreNodeSchema,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
+):
+    await restore_node_service(
+        db=db, current_user=current_user, payload=payload, cache=cache
+    )
+    return success_response(data={"ok": True})
+
+
+@nodes_router_v1.post(
+    "/bulk-starred", dependencies=[Depends(rate_limit(limit=100, window=60))]
+)
+async def toggle_star(
+    payload: BulkToggleStarNodeSchema,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    cache: CacheService = Depends(get_cache),
+):
+    result = await toggle_star_service(
+        db=db, current_user=current_user, payload=payload, cache=cache
+    )
+    return success_response(data=result)
+
+
 @nodes_router_v1.get(
     "/{node_id}", dependencies=[Depends(rate_limit(limit=200, window=60))]
 )
@@ -155,21 +216,6 @@ async def update_node(
     )
 
 
-@nodes_router_v1.delete(
-    "/{node_id}", dependencies=[Depends(rate_limit(limit=20, window=60))]
-)
-async def delete_node(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    cache: CacheService = Depends(get_cache),
-):
-    await delete_node_service(
-        db=db, current_user=current_user, node_id=node_id, cache=cache
-    )
-    return success_response(data={"ok": True})
-
-
 @nodes_router_v1.patch("/{node_id}/rename")
 async def rename_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -189,47 +235,3 @@ async def rename_node(
             "type": result.type.value,
         }
     )
-
-
-@nodes_router_v1.post(
-    "/{node_id}/restore", dependencies=[Depends(rate_limit(limit=20, window=60))]
-)
-async def restore_node(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    cache: CacheService = Depends(get_cache),
-):
-    await restore_node_service(
-        db=db, current_user=current_user, node_id=node_id, cache=cache
-    )
-    return success_response(data={"ok": True})
-
-
-@nodes_router_v1.post(
-    "/{node_id}/starred", dependencies=[Depends(rate_limit(limit=100, window=60))]
-)
-async def toggle_star(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    cache: CacheService = Depends(get_cache),
-):
-    result = await toggle_star_service(
-        db=db, current_user=current_user, node_id=node_id, cache=cache
-    )
-    return success_response(data=result)
-
-
-@nodes_router_v1.delete("/{node_id}/force")
-async def force_delete(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    config: Annotated[Settings, Depends(get_configs)],
-    node_id: uuid.UUID,
-    cache: CacheService = Depends(get_cache),
-):
-    result = await force_delete_service(
-        current_user=current_user, db=db, node_id=node_id, cache=cache
-    )
-    return success_response(data=result)

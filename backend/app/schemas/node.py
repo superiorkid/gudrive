@@ -29,5 +29,17 @@ class CopyNodeSchema(BaseModel):
     parent_id: Optional[uuid.UUID] = None
 
 
-class UpdateNodeOut(BaseModel):
-    pass
+class BulkDeleteNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]
+
+
+class BulkRestoreNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]
+
+
+class BulkForceDeleteNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]
+
+
+class BulkToggleStarNodeSchema(BaseModel):
+    node_ids: list[uuid.UUID]

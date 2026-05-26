@@ -94,7 +94,7 @@ async def get_nodes(
     return success_response(data=result)
 
 
-@nodes_router_v1.post("/move")
+@nodes_router_v1.post("/move", dependencies=[Depends(rate_limit(limit=40, window=60))])
 async def cut_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -107,7 +107,7 @@ async def cut_node(
     return success_response(data={"success": True})
 
 
-@nodes_router_v1.post("/copy")
+@nodes_router_v1.post("/copy", dependencies=[Depends(rate_limit(limit=20, window=60))])
 async def copy_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
@@ -135,7 +135,9 @@ async def delete_node(
     return success_response(data={"ok": True})
 
 
-@nodes_router_v1.delete("/bulk-force-delete")
+@nodes_router_v1.delete(
+    "/bulk-force-delete", dependencies=[Depends(rate_limit(limit=15, window=60))]
+)
 async def force_delete(
     payload: BulkForceDeleteNodeSchema,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -216,7 +218,9 @@ async def update_node(
     )
 
 
-@nodes_router_v1.patch("/{node_id}/rename")
+@nodes_router_v1.patch(
+    "/{node_id}/rename", dependencies=[Depends(rate_limit(limit=60, window=60))]
+)
 async def rename_node(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[AsyncSession, Depends(get_async_db_session)],

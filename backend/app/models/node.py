@@ -13,7 +13,6 @@ from sqlalchemy import (
     Index,
     String,
     Text,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import (
@@ -90,10 +89,12 @@ class Node(TimestampMixin, Base):
         Index("idx_owner_id", "owner_id"),
         Index("idx_deleted_at", "deleted_at"),
         Index("idx_nodes_search_vector", "search_vector", postgresql_using="gin"),
-        UniqueConstraint(
+        Index(
+            "uq_node_name_per_parent",
             "parent_id",
             "name",
             "owner_id",
-            name="uq_node_name_per_parent",
+            unique=True,
+            postgresql_where="deleted_at is NULL",
         ),
     )

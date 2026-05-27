@@ -16,7 +16,7 @@ export const NodesSkeleton = ({ rows = 10, className }: Props) => {
 
   if (view === "grid") {
     return (
-      <div className={cn("p-4", className)}>
+      <div className={cn("w-full p-4", className)}>
         <Skeleton className="mb-4 h-4 w-32" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {Array.from({ length: rows }).map((_, i) => (

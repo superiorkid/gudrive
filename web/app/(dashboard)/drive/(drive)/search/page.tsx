@@ -15,11 +15,17 @@ const Page = async ({ searchParams }: Props) => {
   const { q } = await searchParams
   if (!q) redirect("/drive/home")
 
+  const currentLimit = 25
+
   const queryClient = getQueryClient()
 
-  await queryClient.prefetchQuery({
-    queryKey: nodeKeys.list({ keyword: q }),
-    queryFn: () => fetchNodes({ keyword: q }),
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: nodeKeys.list({
+      keyword: q,
+      limit: currentLimit,
+    }),
+    queryFn: () => fetchNodes({ keyword: q, page: 1, limit: currentLimit }),
+    initialPageParam: 1,
   })
 
   return (

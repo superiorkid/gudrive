@@ -1,3 +1,4 @@
+import AppContext from "@/app/(dashboard)/_components/app-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getQueryClient } from "@/lib/query-client"
 import { nodeKeys } from "@/lib/query-keys"
@@ -5,7 +6,6 @@ import { fetchNodes } from "@/services/node-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { Suspense } from "react"
 import DetailFolderPage from "./_components/detail-folder-page"
-import AppContext from "@/app/(dashboard)/_components/app-context"
 
 type Props = {
   params: Promise<{ folderId: string }>
@@ -15,6 +15,8 @@ type Props = {
     "folder-group"?: string
     "sort-dir"?: string
     "sort-by"?: string
+    page?: string
+    limit?: string
   }>
 }
 
@@ -30,9 +32,10 @@ const FolderPage = async ({ params, searchParams }: Props) => {
     },
   ] = await Promise.all([params, searchParams])
 
+  const currentLimit = 25
   const queryClient = getQueryClient()
 
-  await queryClient.prefetchQuery({
+  await queryClient.prefetchInfiniteQuery({
     queryKey: nodeKeys.list({
       parentId: folderId,
       type: type ?? "",
@@ -40,6 +43,7 @@ const FolderPage = async ({ params, searchParams }: Props) => {
       folderGroup,
       sortDirection,
       sortBy,
+      limit: currentLimit,
     }),
     queryFn: () =>
       fetchNodes({
@@ -49,7 +53,10 @@ const FolderPage = async ({ params, searchParams }: Props) => {
         folderGroup,
         sortDirection,
         sortBy,
+        page: 1,
+        limit: currentLimit,
       }),
+    initialPageParam: 1,
   })
 
   return (

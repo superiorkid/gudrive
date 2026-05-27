@@ -13,6 +13,8 @@ type Props = {
     "folder-group"?: string
     "sort-dir"?: string
     "sort-by"?: string
+    page?: string
+    limit?: string
   }>
 }
 
@@ -24,9 +26,12 @@ const Page = async ({ searchParams }: Props) => {
     "sort-dir": sortDirection,
     "sort-by": sortBy,
   } = await searchParams
+
+  const currentLimit = 25
+
   const queryClient = getQueryClient()
 
-  await queryClient.prefetchQuery({
+  await queryClient.prefetchInfiniteQuery({
     queryKey: nodeKeys.list({
       type,
       modified,
@@ -34,6 +39,7 @@ const Page = async ({ searchParams }: Props) => {
       sortDirection,
       sortBy,
       scope: "starred",
+      limit: currentLimit,
     }),
     queryFn: () =>
       fetchNodes({
@@ -44,7 +50,10 @@ const Page = async ({ searchParams }: Props) => {
         sortBy,
         status: "active",
         scope: "starred",
+        limit: currentLimit,
+        page: 1,
       }),
+    initialPageParam: 1,
   })
 
   return (

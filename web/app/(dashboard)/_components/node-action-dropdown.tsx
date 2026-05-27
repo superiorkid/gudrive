@@ -165,7 +165,7 @@ const NodeActionDropdown = ({
                 disabled={restoreNodePending}
                 onSelect={(e) => {
                   e.preventDefault()
-                  restoreNodeMutation(selectedNodeIds)
+                  restoreNodeMutation([nodeId])
                 }}
               >
                 <TimerResetIcon className="mr-2 size-4" />
@@ -235,7 +235,7 @@ const NodeActionDropdown = ({
                     disabled={cutNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-                      cutNodes(activeNodeIds)
+                      cutNodes([nodeId])
                       setOpenDropdown(false)
                     }}
                   >
@@ -247,7 +247,7 @@ const NodeActionDropdown = ({
                     disabled={copyNodePending}
                     onSelect={(e) => {
                       e.preventDefault()
-                      copyNodes(activeNodeIds)
+                      copyNodes([nodeId])
                       setOpenDropdown(false)
                     }}
                   >
@@ -278,7 +278,7 @@ const NodeActionDropdown = ({
                 disabled={softDeleteNodePending}
                 onSelect={(e) => {
                   e.preventDefault()
-                  softDeleteMutation(activeNodeIds)
+                  softDeleteMutation([nodeId])
                 }}
               >
                 <TrashIcon className="mr-2 size-4" />
@@ -325,7 +325,7 @@ const NodeActionDropdown = ({
                 type="button"
                 variant="destructive"
                 disabled={forceDeleteNodePending}
-                onClick={() => forceDeleteMutation(selectedNodeIds)}
+                onClick={() => forceDeleteMutation([nodeId])}
               >
                 Delete Forever
               </Button>

@@ -4,6 +4,7 @@ import NodeActionDropdown from "@/app/(dashboard)/_components/node-action-dropdo
 import { Button } from "@/components/ui/button"
 import { getFileIcon } from "@/lib/folder-icon"
 import { formatBytes, formatDate } from "@/lib/utils"
+import { useNodeSelection } from "@/providers/node-selection-provider"
 import { TNode } from "@/types/node-type"
 import { ColumnDef } from "@tanstack/react-table"
 import { HardDriveIcon, MoreHorizontalIcon, StarIcon } from "lucide-react"
@@ -111,12 +112,26 @@ function ActionRow({
   isStarred: boolean
   nodeType: "folder" | "file"
 }) {
+  const { clearSelection } = useNodeSelection()
+
   const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
-    useSoftDeleteNode()
+    useSoftDeleteNode({
+      onSuccess: () => {
+        clearSelection()
+      },
+    })
   const { mutate: restoreNodeMutation, isPending: restoreNodePending } =
-    useRestoreNode()
+    useRestoreNode({
+      onSuccess: () => {
+        clearSelection()
+      },
+    })
   const { mutate: forceDeleteMutation, isPending: forceDeletePending } =
-    useForceDeleteNode()
+    useForceDeleteNode({
+      onSuccess: () => {
+        clearSelection()
+      },
+    })
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
     useToggleStar()

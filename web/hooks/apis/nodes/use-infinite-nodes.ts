@@ -1,8 +1,9 @@
 import { nodeKeys } from "@/lib/query-keys"
 import { fetchNodes } from "@/services/node-service"
-import { useQuery } from "@tanstack/react-query"
+import { TNode } from "@/types/node-type"
+import { useInfiniteQuery } from "@tanstack/react-query"
 
-export const useNodes = (
+export const useInfiniteNodes = (
   params: {
     parentId?: string
     type?: string
@@ -14,18 +15,14 @@ export const useNodes = (
     debounceKeyword?: string
     enabled?: boolean
     scope?: "normal" | "starred"
-    page?: number
     limit?: number
   } = {}
 ) => {
   const { enabled = true, ...rest } = params
-
   const scope = rest.scope ?? "normal"
-
-  const currentPage = Number(rest.page ?? 1)
   const currentLimit = Number(rest.limit ?? 25)
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: nodeKeys.list({
       parentId: rest.parentId,
       type: rest.type,
@@ -36,10 +33,10 @@ export const useNodes = (
       status: rest.status,
       keyword: rest.debounceKeyword,
       limit: currentLimit,
-      page: currentPage,
       scope,
     }),
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam = 1 }) =>
       fetchNodes({
         parentId: rest.parentId,
         type: rest.type,
@@ -50,18 +47,24 @@ export const useNodes = (
         status: rest.status,
         keyword: rest.debounceKeyword,
         limit: currentLimit,
-        page: currentPage,
+        page: pageParam,
         scope,
       }),
+    getNextPageParam: (lastPage) => {
+      const pagination = lastPage.data?.pagination
+      if (!pagination || !pagination.has_next_page) return undefined
+      return pagination.page + 1
+    },
     refetchInterval: (query) => {
-      const res = query.state.data
+      const infiniteData = query.state.data
+      if (!infiniteData) return false
 
-      if (!res) return false
-
-      const hasProcessing = res.data?.items.some(
-        (node) =>
-          node.preview_status === "processing" ||
-          node.preview_status === "pending"
+      const hasProcessing = infiniteData.pages.some((page) =>
+        page.data?.items.some(
+          (node: TNode) =>
+            node.preview_status === "processing" ||
+            node.preview_status === "pending"
+        )
       )
 
       return hasProcessing ? 2000 : false

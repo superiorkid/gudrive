@@ -27,6 +27,8 @@ export const fetchNodeDetail = async (id: string) => {
 
 export const fetchNodes = async (
   params: {
+    limit: number
+    page: number
     parentId?: string
     keyword?: string
     type?: string
@@ -42,6 +44,8 @@ export const fetchNodes = async (
     sortBy: "name",
     status: "active",
     scope: "normal",
+    page: 1,
+    limit: 25,
   }
 ) => {
   const axiosInstance = await createAxiosInstance()
@@ -58,9 +62,21 @@ export const fetchNodes = async (
         ...(params.status && { status: params.status }),
         ...(params.keyword && { keyword: params.keyword }),
         ...(params.scope && { scope: params.scope }),
+        ...(params.page && { page: params.page }),
+        ...(params.limit && { limit: params.limit }),
       },
     })
-    return response.data as ApiResponse<TNode[]>
+    return response.data as ApiResponse<{
+      items: TNode[]
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        total_pages: number
+        has_next_page: boolean
+        has_prev_page: boolean
+      }
+    }>
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError

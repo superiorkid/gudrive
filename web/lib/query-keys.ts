@@ -12,6 +12,8 @@ export const nodeKeys = {
       status?: string
       keyword?: string
       scope?: string
+      limit?: number
+      page?: number
     } = {}
   ) =>
     [
@@ -26,6 +28,8 @@ export const nodeKeys = {
         sortBy: params.sortBy ?? "name",
         status: params.status ?? "active",
         scope: params.scope ?? "normal",
+        page: params.page ?? 1,
+        limit: params.limit ?? 25,
       },
     ] as const,
   details: () => [...nodeKeys.base, "detail"] as const,

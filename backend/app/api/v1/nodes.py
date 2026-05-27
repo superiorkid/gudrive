@@ -76,6 +76,8 @@ async def get_nodes(
     status: Optional[str] = "active",  # "active" | "trashed"
     keyword: Optional[str] = None,
     scope: Optional[str] = None,  # "starred" | "normal" | etc.
+    page: Optional[int] = 1,
+    limit: Optional[int] = 25,
 ):
     result = await get_nodes_service(
         current_user=current_user,
@@ -90,6 +92,8 @@ async def get_nodes(
         keyword=keyword,
         scope=scope,
         cache=cache,
+        page=page,
+        limit=limit,
     )
     return success_response(data=result)
 

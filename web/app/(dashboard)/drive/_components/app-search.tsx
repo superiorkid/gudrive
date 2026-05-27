@@ -51,9 +51,11 @@ const AppSearch = () => {
   } = useNodes({
     debounceKeyword: debouncedKeyword,
     enabled: !!debouncedKeyword,
+    page: 1,
+    limit: 5,
   })
 
-  const isEmpty = !isFetching && nodes?.data.length === 0
+  const isEmpty = !isFetching && nodes?.data?.items.length === 0
 
   const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -105,7 +107,7 @@ const AppSearch = () => {
       </form>
 
       {debouncedKeyword && isFocused && (
-        <div className="absolute top-full left-0 z-50 mt-2 w-full max-w-md 2xl:max-w-xl">
+        <div className="absolute top-full left-0 z-999999 mt-2 w-full max-w-md 2xl:max-w-xl">
           <div className="rounded-lg border bg-card shadow-sm">
             {isError && (
               <div className="p-4 text-sm text-destructive">
@@ -119,9 +121,9 @@ const AppSearch = () => {
               </div>
             )}
 
-            {nodes?.data && nodes.data.length > 0 && (
+            {nodes?.data && nodes.data.items.length > 0 && (
               <ul role="listbox" className="max-h-96 divide-y overflow-auto">
-                {nodes.data.map((node) => (
+                {nodes.data.items.map((node) => (
                   <li
                     key={node.id}
                     role="option"

@@ -1,7 +1,11 @@
+import asyncio
+import logging
 import os
 import uuid
+from math import ceil
 from pathlib import Path
-from typing import Optional
+from types import CoroutineType
+from typing import Any, Optional
 
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +21,7 @@ from app.common.exceptions import (
 from app.lib.copy_node_recursive import copy_node_recursive
 from app.lib.generate_unique_filename import generate_unique_filename
 from app.lib.is_descendant import is_descendant
+from app.models import UploadSession
 from app.models.node import Node, NodeType
 from app.models.starred_node import StarredNode
 from app.models.user import User
@@ -40,43 +45,30 @@ from app.services.node_query import (
     normalize_sort,
 )
 
+logger = logging.getLogger(__name__)
+
 
 async def create_node_service(
     payload: CreateNodeSchema, db: AsyncSession, current_user: User, cache: CacheService
 ):
-    name = payload.name.strip()
-    if not name:
-        raise BadRequestException("Folder name is required", details={})
+    name = payload.name
 
-    if payload.parent_id:
-        query = select(Node).where(
+    if payload.parent_id is not None:
+        query = select(Node.type).where(
             Node.id == payload.parent_id,
             Node.owner_id == current_user.id,
             Node.deleted_at.is_(None),
         )
         result = await db.execute(query)
-        parent = result.scalar_one_or_none()
+        parent_type = result.scalar_one_or_none()
 
-        if not parent:
+        if parent_type is None:
             raise NotFoundException("Node", str(payload.parent_id))
 
-        if parent.type != NodeType.FOLDER:
+        if parent_type != NodeType.FOLDER:
             raise BadRequestException(
-                "Parent must be a folder", details={"parent_type": parent.type}
+                "Parent must be a folder", details={"parent_type": parent_type}
             )
-
-    # prevent duplicate name in same folder
-    query = select(Node).where(
-        Node.parent_id == payload.parent_id,
-        Node.owner_id == current_user.id,
-        Node.name == name,
-        Node.deleted_at.is_(None),
-    )
-    result = await db.execute(query)
-    existing = result.scalar_one_or_none()
-
-    if existing:
-        raise AlreadyExistsException("Node", "name", name)
 
     node = Node(
         name=name,
@@ -84,25 +76,35 @@ async def create_node_service(
         parent_id=payload.parent_id,
         owner_id=current_user.id,
         mime_type="inode/directory",
-        size=None,
-        storage_path=None,
     )
 
     db.add(node)
-    await db.commit()
-    await db.refresh(node)
 
-    # invalidate folder listing
-    await cache.flush_pattern(
-        f"nodes:user={current_user.id}:parent={payload.parent_id}:*"
-    )
-    # invalidate search cache
-    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
-    # invalidate parent detail cache
-    if payload.parent_id:
-        await cache.delete(
-            f"node:detail:user={current_user.id}:node={payload.parent_id}"
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        await db.rollback()
+        if "uq_node_name_per_parent" in str(e.orig):
+            raise AlreadyExistsException("Node", "name", name) from e
+
+    await db.refresh(node, ["created_at", "updated_at", "preview_status"])
+
+    invalidation_tasks: list[CoroutineType[Any, Any, Any]] = [
+        cache.flush_pattern(
+            f"nodes:user={current_user.id}:parent={payload.parent_id}:*"
+        ),
+        cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*"),
+    ]
+
+    if payload.parent_id is not None:
+        invalidation_tasks.append(
+            cache.delete(f"node:detail:user={current_user.id}:node={payload.parent_id}")
         )
+
+    results = await asyncio.gather(*invalidation_tasks, return_exceptions=True)
+    for r in results:
+        if isinstance(r, Exception):
+            logger.warning(f"Cache invalidation failed: {r}")
 
     return node
 
@@ -120,8 +122,14 @@ async def get_nodes_service(
     status: Optional[str],
     keyword: Optional[str],
     scope: Optional[str],
+    page: Optional[int],
+    limit: Optional[int],
 ):
     status = status if status else "active"
+    page = max(page or 1, 1)
+    limit = min(max(limit or 25, 1), 100)
+
+    offset = (page - 1) * limit
 
     cache_key = (
         f"nodes:"
@@ -134,7 +142,9 @@ async def get_nodes_service(
         f"folder_group={folder_group}:"
         f"status={status}:"
         f"keyword={keyword}:"
-        f"scope={scope}"
+        f"scope={scope}:"
+        f"page={page}:"
+        f"limit={limit}"
     )
 
     cached = await cache.get(cache_key)
@@ -180,9 +190,10 @@ async def get_nodes_service(
         )
 
     if scope == "starred":
-        query = query.join(StarredNode, StarredNode.node_id == Node.id).where(
-            StarredNode.user_id == current_user.id
-        )
+        query = query.join(
+            StarredNode,
+            StarredNode.node_id == Node.id,
+        ).where(StarredNode.user_id == current_user.id)
 
     if status != "trashed":
         if scope != "starred":
@@ -246,6 +257,21 @@ async def get_nodes_service(
 
     query = query.add_columns(is_starred_subquery.label("is_starred"))
 
+    #
+    # COUNT QUERY
+    #
+    count_subquery = query.order_by(None).subquery()
+
+    total_query = select(func.count()).select_from(count_subquery)
+
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+
+    #
+    # PAGINATION
+    #
+    query = query.offset(offset).limit(limit)
+
     result = await db.execute(query)
     rows = result.all()
 
@@ -276,14 +302,27 @@ async def get_nodes_service(
         for node, is_starred in rows
     ]
 
+    response = {
+        "items": data,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": ceil(total / limit) if total > 0 else 1,
+            "has_next_page": page * limit < total,
+            "has_prev_page": page > 1,
+        },
+    }
+
     ttl = 15 if keyword else 60
+
     await cache.set(
         cache_key,
-        data,
+        response,
         ttl=ttl * 60 * 60,
     )
 
-    return data
+    return response
 
 
 async def detail_node_service(
@@ -729,6 +768,10 @@ async def force_delete_service(
                 pass
 
     all_deleted_ids = [item.id for item in nodes_to_delete]
+
+    await db.execute(
+        delete(UploadSession).where(UploadSession.parent_id.in_(all_deleted_ids))
+    )
     await db.execute(delete(Node).where(Node.id.in_(all_deleted_ids)))
     await db.commit()
 

@@ -1,3 +1,4 @@
+import AppContext from "@/app/(dashboard)/_components/app-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getQueryClient } from "@/lib/query-client"
 import { nodeKeys } from "@/lib/query-keys"
@@ -5,7 +6,6 @@ import { fetchNodes } from "@/services/node-service"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { Suspense } from "react"
 import MyDrivePage from "./_components/my-drive-page"
-import AppContext from "@/app/(dashboard)/_components/app-context"
 
 type Props = {
   searchParams: Promise<{
@@ -25,15 +25,19 @@ const Page = async ({ searchParams }: Props) => {
     "sort-dir": sortDirection,
     "sort-by": sortBy,
   } = await searchParams
+
+  const currentLimit = 25
+
   const queryClient = getQueryClient()
 
-  await queryClient.prefetchQuery({
+  await queryClient.prefetchInfiniteQuery({
     queryKey: nodeKeys.list({
       type,
       modified,
       folderGroup,
       sortDirection,
       sortBy,
+      limit: currentLimit,
     }),
     queryFn: () =>
       fetchNodes({
@@ -43,7 +47,10 @@ const Page = async ({ searchParams }: Props) => {
         sortDirection,
         sortBy,
         status: "active",
+        page: 1,
+        limit: currentLimit,
       }),
+    initialPageParam: 1,
   })
 
   return (

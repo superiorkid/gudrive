@@ -27,16 +27,19 @@ const Page = async ({ searchParams }: Props) => {
     "sort-by": rawSortBy,
   } = params
 
+  const currentLimit = 25
+
   const sortBy = rawSortBy ?? "date-trashed"
   const queryClient = getQueryClient()
 
-  await queryClient.prefetchQuery({
+  await queryClient.prefetchInfiniteQuery({
     queryKey: nodeKeys.list({
       type,
       modified,
       sortDirection,
       sortBy: sortBy ?? "date-trashed",
       status: "trashed",
+      limit: currentLimit,
     }),
     queryFn: () =>
       fetchNodes({
@@ -45,7 +48,10 @@ const Page = async ({ searchParams }: Props) => {
         sortDirection,
         sortBy,
         status: "trashed",
+        page: 1,
+        limit: currentLimit,
       }),
+    initialPageParam: 1,
   })
 
   return (

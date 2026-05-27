@@ -22,11 +22,41 @@ export const createAxiosInstance = async () => {
     })
   }
 
-  return axios.create({
+  const instance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_BASE_API_URL,
     withCredentials: true,
     headers: {
       Accept: "application/json",
     },
   })
+
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config
+
+      if (error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true
+
+        console.log("refresh token interceptor executed!!!")
+
+        try {
+          await axios.post(
+            `${process.env.NEXT_PUBLIC_BASE_API_URL}/v1/auth/refresh`,
+            {},
+            { withCredentials: true }
+          )
+
+          return instance(originalRequest)
+        } catch (error) {
+          window.location.href = "/login"
+          return Promise.reject(error)
+        }
+      }
+
+      return Promise.reject(error)
+    }
+  )
+
+  return instance
 }

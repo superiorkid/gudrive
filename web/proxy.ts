@@ -4,15 +4,20 @@ const AUTH_ROUTES = ["/enter", "/register"]
 const PUBLIC_ROUTES = [...AUTH_ROUTES]
 
 export default function proxy(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl
+  const { pathname, search } = request.nextUrl
 
-  const access_token = request.cookies.get("access-token")?.value
-  const isAuthenticated = Boolean(access_token)
+  const accessToken = request.cookies.get("access-token")?.value
+  const refreshToken = request.cookies.get("refresh-token")?.value
+
+  const isAuthenticated = Boolean(accessToken) || Boolean(refreshToken)
+
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
 
   if (!isAuthenticated && !isPublicRoute) {
     const loginUrl = new URL("/enter", request.url)
-    loginUrl.searchParams.set("redirect", pathname)
+
+    loginUrl.searchParams.set("redirect", `${pathname}${search}`)
+
     return NextResponse.redirect(loginUrl)
   }
 
@@ -27,7 +32,8 @@ export default function proxy(request: NextRequest) {
   if (pathname === "/drive/folders") {
     const url = new URL("/drive/my-drive", request.url)
 
-    const display = searchParams.get("display")
+    const display = request.nextUrl.searchParams.get("display")
+
     if (display) {
       url.searchParams.set("display", display)
     }

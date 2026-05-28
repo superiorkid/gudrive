@@ -11,34 +11,47 @@ import NodeFilters from "./node-filters"
 const AppActions = () => {
   const pathname = usePathname()
 
-  const currentSection = useMemo(() => {
-    if (pathname.includes("trash")) return "trash"
-    if (pathname.includes("my-drive")) return "my-drive"
-    if (pathname.includes("folders")) return "folders"
-
-    return null
+  const isInsideDrive = useMemo(() => {
+    return (
+      pathname.includes("my-drive") ||
+      pathname.includes("folders") ||
+      pathname.includes("trash")
+    )
   }, [pathname])
 
-  const isTrashPage = currentSection === "trash"
+  const isTrashPage = pathname.includes("trash")
 
   const { selectedNodeIds, clearSelection } = useNodeSelection()
-  const { clearClipboard } = useClipboard()
+  const { clipboardNodeIds, clearClipboard } = useClipboard()
 
   const hasSelectedItems = selectedNodeIds.length > 0
-
-  const previousSectionRef = useRef<string | null>(null)
+  const previousPathnameRef = useRef<string>(pathname)
 
   useEffect(() => {
-    const previousSection = previousSectionRef.current
+    const previousPathname = previousPathnameRef.current
 
-    // clear selection when moving between sections
-    if (previousSection && previousSection !== currentSection) {
-      clearSelection()
-      clearClipboard()
+    if (previousPathname !== pathname) {
+      const wasTrash = previousPathname.includes("trash")
+      const isNowTrash = pathname.includes("trash")
+
+      if (!isInsideDrive || wasTrash !== isNowTrash) {
+        clearSelection()
+        clearClipboard()
+      } else {
+        if (!clipboardNodeIds || clipboardNodeIds.length === 0) {
+          clearSelection()
+        }
+      }
     }
 
-    previousSectionRef.current = currentSection
-  }, [currentSection, clearSelection, clearClipboard])
+    previousPathnameRef.current = pathname
+  }, [
+    pathname,
+    isInsideDrive,
+    clipboardNodeIds,
+    clearSelection,
+    clearClipboard,
+  ])
 
   if (hasSelectedItems) {
     return <ActionToolbar isTrashPage={isTrashPage} />

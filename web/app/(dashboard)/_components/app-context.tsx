@@ -45,7 +45,7 @@ const AppContext = ({ children }: Props) => {
   const { clipboardNodeIds, operation, hasItems, clearClipboard } =
     useClipboard()
 
-  const { clearSelection } = useNodeSelection()
+  const { clearSelection, selectedNodeIds } = useNodeSelection()
 
   const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
     onSuccess: () => {
@@ -65,14 +65,14 @@ const AppContext = ({ children }: Props) => {
 
     if (operation == "cut") {
       cutNodeMutation({
-        nodeIds: clipboardNodeIds,
+        nodeIds: clipboardNodeIds || selectedNodeIds,
         parentId: params.newParentId,
       })
     }
 
     if (operation === "copy") {
       copyNodeMutation({
-        nodeIds: clipboardNodeIds,
+        nodeIds: clipboardNodeIds || selectedNodeIds,
         parentId: params.newParentId,
       })
     }
@@ -86,7 +86,9 @@ const AppContext = ({ children }: Props) => {
         </ContextMenuTrigger>
         <ContextMenuContent className="z-40">
           <ContextMenuItem
-            disabled={!hasItems || cutNodePending || copyNodePending}
+            disabled={
+              !hasItems || cutNodePending || copyNodePending || !selectedNodeIds
+            }
             onClick={() => {
               handlePaste({ newParentId: folderId })
             }}

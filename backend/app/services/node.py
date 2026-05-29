@@ -6,7 +6,7 @@ from pathlib import Path
 from types import CoroutineType
 from typing import Any, Optional
 
-from sqlalchemy import and_, delete, func, insert, or_, select, tuple_, update
+from sqlalchemy import and_, case, delete, func, insert, or_, select, tuple_, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
@@ -17,10 +17,6 @@ from app.common.exceptions import (
     BadRequestException,
     NotFoundException,
 )
-from app.lib.generate_unique_filename import (
-    generate_unique_filename,
-)
-from app.lib.is_descendant import is_descendant
 from app.lib.utils import (
     _build_new_storage_path,
     _cleanup_files,
@@ -42,7 +38,6 @@ from app.schemas.node import (
     CreateNodeSchema,
     MoveNodeSchema,
     RenameNodeSchema,
-    UpdateNodeSchema,
 )
 from app.services.cache import CacheService
 from app.services.node_query import (
@@ -347,141 +342,52 @@ async def detail_node_service(
     if cached is not None:
         return cached
 
-    query = select(Node).where(
-        Node.id == node_id,
-        Node.owner_id == current_user.id,
+    children_count_subq = (
+        select(func.count())
+        .select_from(Node)
+        .where(
+            Node.parent_id == node_id,
+            Node.owner_id == current_user.id,
+            Node.deleted_at.is_(None),
+        )
+        .scalar_subquery()
     )
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
 
-    if not node:
+    children_count_expr = case(
+        (Node.type == NodeType.FOLDER, children_count_subq), else_=None
+    ).label("children_count")
+
+    row = (
+        await db.execute(
+            select(Node, children_count_expr).where(
+                Node.id == node_id,
+                Node.owner_id == current_user.id,
+            )
+        )
+    ).one_or_none()
+
+    if row is None:
         raise NotFoundException("Node", str(node_id))
 
+    node, children_count = row
     response = {
         "id": str(node.id),
         "name": node.name,
         "type": node.type.value,
-        "parent_id": node.parent_id,
+        "parent_id": str(node.parent_id) if node.parent_id else None,
         "mime_type": node.mime_type,
         "size": node.size,
         "preview_url": node.preview_url,
         "preview_status": node.preview_status,
-        "created_at": node.created_at,
-        "updated_at": node.updated_at,
+        "created_at": node.created_at.isoformat() if node.created_at else None,
+        "updated_at": node.updated_at.isoformat() if node.updated_at else None,
     }
 
     if node.type == NodeType.FOLDER:
-        count_result = await db.execute(
-            select(func.count()).where(
-                Node.parent_id == node.id,
-                Node.owner_id == current_user.id,
-                Node.deleted_at.is_(None),
-            )
-        )
-        children_count = count_result.scalar_one()
+        response["children_count"] = children_count or 0
 
-        response["children_count"] = children_count
-
-    await cache.set(
-        cache_key,
-        response,
-        ttl=300 * 60 * 60,
-    )
-
+    await cache.set(cache_key, response, ttl=300)
     return response
-
-
-async def update_node_service(
-    db: AsyncSession,
-    current_user: User,
-    node_id: uuid.UUID,
-    payload: UpdateNodeSchema,
-    cache: CacheService,
-):
-    query = select(Node).where(
-        Node.id == node_id,
-        Node.owner_id == current_user.id,
-        Node.deleted_at.is_(None),
-    )
-    result = await db.execute(query)
-    node = result.scalar_one_or_none()
-
-    if not node:
-        raise NotFoundException("Node", str(node_id))
-
-    new_name = node.name
-    if payload.name is not None:
-        new_name = payload.name.strip()
-        if not new_name:
-            raise BadRequestException(
-                "Name cannot be empty", details={"new_name": payload.name}
-            )
-
-    new_parent_id = (
-        payload.parent_id if payload.parent_id is not None else node.parent_id
-    )
-    if payload.parent_id is not None:
-        if payload.parent_id == node.id:
-            raise BadRequestException(
-                "Cannot move node into itself",
-                details={"new_parent_id": str(payload.parent_id)},
-            )
-
-        # preventing moving to descendant
-        is_invalid = await is_descendant(
-            db=db, node_id=node_id, target_id=payload.parent_id
-        )
-        if is_invalid:
-            raise BadRequestException("Cannot move a folder into its own subfolder")
-
-        query = select(Node).where(
-            Node.id == payload.parent_id,
-            Node.owner_id == current_user.id,
-            Node.deleted_at.is_(None),
-        )
-        result = await db.execute(query)
-        parent = result.scalar_one_or_none()
-
-        if not parent:
-            raise NotFoundException("Node", str(payload.parent_id))
-
-        if parent.type != NodeType.FOLDER:
-            raise BadRequestException(
-                "Target must be a folder", details={"parent_type": parent.type}
-            )
-
-    query = select(Node).where(
-        Node.parent_id == new_parent_id,
-        Node.owner_id == current_user.id,
-        Node.name == new_name,
-        Node.id != node.id,
-        Node.deleted_at.is_(None),
-    )
-    result = await db.execute(query)
-    existing = result.scalar_one_or_none()
-
-    if existing:
-        raise AlreadyExistsException("Node", "name", new_name)
-
-    old_parent_id = node.parent_id
-    node.name = new_name
-    node.parent_id = new_parent_id
-
-    await db.commit()
-    await db.refresh(node)
-
-    await cache.flush_pattern(f"node:detail:user={current_user.id}:node={node_id}")
-    # invalidate old folder
-    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={old_parent_id}:*")
-    if old_parent_id != new_parent_id:
-        # invalidate new folder
-        await cache.flush_pattern(
-            f"nodes:user={current_user.id}:parent={new_parent_id}:*"
-        )
-    # invalidate search cache
-    await cache.flush_pattern(f"nodes:user={current_user.id}:keyword=*")
-
-    return node
 
 
 async def delete_node_service(
@@ -862,37 +768,45 @@ async def rename_node_service(
     payload: RenameNodeSchema,
     cache: CacheService,
 ):
-    result = await db.execute(
-        select(Node).where(
-            Node.id == node_id,
-            Node.owner_id == current_user.id,
-            Node.deleted_at.is_(None),
+    node = (
+        await db.execute(
+            select(Node).where(
+                Node.id == node_id,
+                Node.owner_id == current_user.id,
+                Node.deleted_at.is_(None),
+            )
         )
-    )
-    node = result.scalar_one_or_none()
+    ).scalar_one_or_none()
     if not node:
         raise NotFoundException("Node", str(node_id))
 
-    new_name = payload.new_name.strip()
-    if not new_name:
-        raise BadRequestException(
-            "Name cannot be empty",
-            details={"new_name": payload.new_name},
-        )
-
-    if new_name == node.name:
-        return {"success": True}
+    new_name = payload.new_name
 
     if node.type == NodeType.FILE:
         old_suffix = Path(node.name).suffix
-        new_suffix = Path(new_name).suffix
-
-        if not new_suffix and old_suffix:
+        if old_suffix and not Path(new_name).suffix:
             new_name = f"{new_name}{old_suffix}"
 
-    resolved_name = await generate_unique_filename(
-        db=db, owner_id=current_user.id, parent_id=node.parent_id, filename=new_name
+    if new_name == node.name:
+        return node
+
+    taken_names = set(
+        (
+            await db.execute(
+                select(Node.name).where(
+                    Node.owner_id == current_user.id,
+                    Node.parent_id == node.parent_id,
+                    Node.deleted_at.is_(None),
+                    Node.id != node.id,
+                )
+            )
+        )
+        .scalars()
+        .all()
     )
+
+    resolved_name = _resolve_unique_name(new_name, taken_names)
+
     node.name = resolved_name
 
     try:
@@ -906,14 +820,18 @@ async def rename_node_service(
         )
 
     await db.refresh(node)
-    # invalidate detail cache
-    await cache.delete(f"node:detail:user={current_user.id}:node={node.id}")
-    # invalidate folder listing
-    await cache.flush_pattern(f"nodes:user={current_user.id}:parent={node.parent_id}:*")
-    # invalidate search cache
-    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
 
-    return {"success": True}
+    results = await asyncio.gather(
+        cache.delete(f"node:detail:user={current_user.id}:node={node.id}"),
+        cache.flush_pattern(f"nodes:user={current_user.id}:parent={node.parent_id}:*"),
+        cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*"),
+        return_exceptions=True,
+    )
+    for r in results:
+        if isinstance(r, Exception):
+            logger.warning(f"Cache invalidation failed: {r}")
+
+    return node
 
 
 async def cut_node_service(

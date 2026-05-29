@@ -29,6 +29,17 @@ class UpdateNodeSchema(BaseModel):
 class RenameNodeSchema(BaseModel):
     new_name: str
 
+    @field_validator("new_name")
+    @classmethod
+    def _normalize_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Name is required")
+        # block path separators
+        if "/" in v or "\\" in v:
+            raise ValueError("Name cannot contain path separators.")
+        return v
+
 
 class MoveNodeSchema(BaseModel):
     node_ids: list[uuid.UUID]

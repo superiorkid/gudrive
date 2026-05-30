@@ -300,6 +300,7 @@ async def get_nodes_service(
             "mime_type": node.mime_type,
             "preview_url": node.preview_url,
             "preview_status": node.preview_status,
+            "storage_path": node.storage_path,
             "is_starred": is_starred,
             "created_at": node.created_at,
             "updated_at": node.updated_at,

@@ -1,8 +1,9 @@
 "use client"
 
+import { useDisplay } from "@/hooks/use-display"
 import { useFoldersGroup } from "@/hooks/use-folders-group"
 import { TNode } from "@/types/node-type"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import NoItemsView from "./no-items-view"
 import NodeCard from "./node-card"
 
@@ -11,6 +12,11 @@ type Props = {
 }
 
 const GridNodes = ({ data }: Props) => {
+  const { push } = useRouter()
+
+  const [display] = useDisplay()
+  const searchParams = new URLSearchParams({ display })
+
   const [folderGroup] = useFoldersGroup()
 
   const pathname = usePathname()
@@ -29,6 +35,42 @@ const GridNodes = ({ data }: Props) => {
     folderGroup === "top" && !isTrashPage
       ? data.filter((n) => n.type !== "folder")
       : []
+
+  const handleNodeNavigation = (node: TNode) => {
+    if (node.type === "folder") {
+      push(`/drive/folders/${node.id}?${searchParams.toString()}`)
+    }
+
+    if (node.type === "file") {
+      const rawFileUrl = `${process.env.NEXT_PUBLIC_BASE_API_URL}/v1/nodes/${node.id}/raw`
+
+      const officeMimeTypes = [
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+        "application/wps-office.docx",
+        "application/wps-office.xlsx",
+        "application/wps-office.pptx",
+        "application/wps-office.doc",
+        "application/wps-office.xls",
+        "application/wps-office.ppt",
+      ]
+
+      const isOfficeDoc = officeMimeTypes.includes(node.mime_type || "")
+
+      let finalUrl = rawFileUrl
+
+      if (isOfficeDoc) {
+        finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(rawFileUrl)}&embedded=true`
+      }
+
+      window.open(finalUrl, "_blank", "noopener,noreferrer")
+    }
+  }
 
   const renderGrid = (nodes: TNode[]) => (
     <div className="grid grid-cols-4 gap-4 2xl:grid-cols-7">
@@ -49,6 +91,7 @@ const GridNodes = ({ data }: Props) => {
             isMixedView={isMixedView}
             isTrashPage={isTrashPage}
             isStarred={node.is_starred}
+            handleNavigation={handleNodeNavigation}
           />
         )
       })}

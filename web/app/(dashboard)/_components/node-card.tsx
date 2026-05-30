@@ -6,7 +6,6 @@ import { useForceDeleteNode } from "@/hooks/apis/nodes/use-force-delete-node"
 import { useRestoreNode } from "@/hooks/apis/nodes/use-restore-node"
 import { useSoftDeleteNode } from "@/hooks/apis/nodes/use-soft-delete-node"
 import { useToggleStar } from "@/hooks/apis/nodes/use-toggle-star"
-import { useDisplay } from "@/hooks/use-display"
 import { getFileIcon } from "@/lib/folder-icon"
 import { cn } from "@/lib/utils"
 import { useClipboard } from "@/providers/clipboard-provider"
@@ -20,7 +19,6 @@ import {
   MoreHorizontalIcon,
 } from "lucide-react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { useRef } from "react"
 import NodeActionDropdown from "./node-action-dropdown"
 
@@ -32,6 +30,7 @@ type Props = {
   isFolder: boolean
   isMixedView: boolean
   isStarred: boolean
+  handleNavigation: (node: TNode) => void
 }
 
 const NodeCard = ({
@@ -42,12 +41,9 @@ const NodeCard = ({
   isFolder,
   isMixedView,
   isStarred,
+  handleNavigation,
 }: Props) => {
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  const { push } = useRouter()
-  const [display] = useDisplay()
-  const searchParams = new URLSearchParams({ display })
 
   const { mutate: softDeleteMutation, isPending: pendingSoftDelete } =
     useSoftDeleteNode()
@@ -58,14 +54,6 @@ const NodeCard = ({
 
   const { mutate: toggleStarMutation, isPending: toggleStarPending } =
     useToggleStar()
-
-  const handleNodeNavigation = (node: TNode) => {
-    if (node.type === "folder") {
-      push(`/drive/folders/${node.id}?${searchParams.toString()}`)
-    } else {
-      console.log("Opening file preview for:", node.name)
-    }
-  }
 
   const { selectSingleNode, toggleSelectedNode, isSelected } =
     useNodeSelection()
@@ -78,7 +66,7 @@ const NodeCard = ({
     <Card
       onDoubleClick={() => {
         if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current)
-        handleNodeNavigation(node)
+        handleNavigation(node)
       }}
       onContextMenu={(event) => {
         event.stopPropagation()

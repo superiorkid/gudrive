@@ -1,7 +1,10 @@
+import os
 import uuid
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import FileResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -10,7 +13,10 @@ from app.api.deps import (
     get_current_active_user,
     rate_limit,
 )
+from app.common.exceptions import NotFoundException
 from app.lib.success_response import success_response
+from app.models import Node
+from app.models.node import NodeType
 from app.models.user import User
 from app.schemas.node import (
     BulkDeleteNodeSchema,
@@ -217,4 +223,32 @@ async def rename_node(
             "parent_id": result.parent_id,
             "type": result.type.value,
         }
+    )
+
+
+@nodes_router_v1.get("/{node_id}/raw")
+async def get_raw_file(
+    node_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    node = (
+        await db.execute(
+            select(Node).where(
+                Node.id == node_id,
+                Node.owner_id == current_user.id,
+                Node.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none()
+
+    if node is None or node.type != NodeType.FILE:
+        raise NotFoundException("Node", str(node_id))
+
+    absolute_file_path = os.path.abspath(node.storage_path or "")
+    return FileResponse(
+        path=absolute_file_path,
+        media_type=node.mime_type,
+        filename=node.name,
+        content_disposition_type="inline",
     )

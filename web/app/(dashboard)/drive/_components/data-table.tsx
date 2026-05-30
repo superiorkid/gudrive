@@ -51,8 +51,35 @@ export function DataTable<TData extends TNode, TValue>({
   const handleNodeNavigation = (node: TNode) => {
     if (node.type === "folder" && !pathname.includes("trash")) {
       push(`/drive/folders/${node.id}?${searchParams.toString()}`)
-    } else {
-      console.log("Opening file preview for:", node.name)
+    }
+
+    if (node.type === "file") {
+      const rawFileUrl = `${process.env.NEXT_PUBLIC_BASE_API_URL}/v1/nodes/${node.id}/raw`
+
+      const officeMimeTypes = [
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+        "application/wps-office.docx",
+        "application/wps-office.xlsx",
+        "application/wps-office.pptx",
+        "application/wps-office.doc",
+        "application/wps-office.xls",
+        "application/wps-office.ppt",
+      ]
+
+      const isOfficeDoc = officeMimeTypes.includes(node.mime_type || "")
+
+      let finalUrl = rawFileUrl
+
+      if (isOfficeDoc) {
+        finalUrl = `https://docs.google.com/gview?url=${encodeURIComponent(rawFileUrl)}&embedded=true`
+      }
+      window.open(finalUrl, "_blank", "noopener,noreferrer")
     }
   }
 

@@ -1,11 +1,9 @@
 import {
-  ClockIcon,
   HardDriveIcon,
   HouseIcon,
   LucideIcon,
   StarIcon,
   Trash2Icon,
-  TrashIcon,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useMemo } from "react"
@@ -33,12 +31,12 @@ export function useSideMenu() {
         icon: HardDriveIcon,
         isActive: pathname.includes("/drive/my-drive"),
       },
-      {
-        title: "Recent",
-        url: `/drive/recent?${searchParams.toString()}`,
-        icon: ClockIcon,
-        isActive: pathname.includes("/drive/recent"),
-      },
+      // {
+      //   title: "Recent",
+      //   url: `/drive/recent?${searchParams.toString()}`,
+      //   icon: ClockIcon,
+      //   isActive: pathname.includes("/drive/recent"),
+      // },
       {
         title: "Starred",
         url: `/drive/starred?${searchParams.toString()}`,

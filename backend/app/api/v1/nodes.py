@@ -21,7 +21,6 @@ from app.schemas.node import (
     CreateNodeSchema,
     MoveNodeSchema,
     RenameNodeSchema,
-    UpdateNodeSchema,
 )
 from app.services.cache import CacheService
 from app.services.node import (
@@ -35,7 +34,6 @@ from app.services.node import (
     rename_node_service,
     restore_node_service,
     toggle_star_service,
-    update_node_service,
 )
 
 nodes_router_v1 = APIRouter(tags=["Nodes"])
@@ -197,29 +195,6 @@ async def detail_node(
         node_id=node_id, db=db, current_user=current_user, cache=cache
     )
     return success_response(data=result)
-
-
-@nodes_router_v1.put(
-    "/{node_id}", dependencies=[Depends(rate_limit(limit=60, window=60))]
-)
-async def update_node(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    node_id: uuid.UUID,
-    payload: UpdateNodeSchema,
-    cache: CacheService = Depends(get_cache),
-):
-    result = await update_node_service(
-        db=db, current_user=current_user, node_id=node_id, payload=payload, cache=cache
-    )
-    return success_response(
-        data={
-            "id": str(result.id),
-            "name": result.name,
-            "parent_id": result.parent_id,
-            "type": result.type.value,
-        }
-    )
 
 
 @nodes_router_v1.patch(

@@ -1,4 +1,3 @@
-import { TUpdateNodeSchema } from "@/app/(dashboard)/schema"
 import { createAxiosInstance } from "@/lib/axios"
 import { ApiResponse } from "@/types/api-response-type"
 import { TNode } from "@/types/node-type"
@@ -181,38 +180,6 @@ export const toggleStar = async (nodeIds: Array<string>) => {
     return response.data as ApiResponse<{
       node_id: string
       is_starred: boolean
-    }>
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError
-      console.error("API Error Status:", axiosError.response?.status)
-      console.error("Server Data:", axiosError.response?.data)
-    } else if (error instanceof Error) {
-      console.error("Native Erro:", error.message)
-    } else {
-      console.error("Unexpected Error:", error)
-    }
-
-    throw error
-  }
-}
-
-export const updateNode = async (params: {
-  nodeId: string
-  payload: TUpdateNodeSchema
-}) => {
-  const axiosInstance = await createAxiosInstance()
-
-  try {
-    const response = await axiosInstance.put(`/v1/nodes/${params.nodeId}`, {
-      name: params.payload.newName,
-      parent_id: params.payload.parentId,
-    })
-    return response.data as ApiResponse<{
-      id: string
-      name: string
-      parent_id?: string
-      type: "folder" | "file"
     }>
   } catch (error) {
     if (axios.isAxiosError(error)) {

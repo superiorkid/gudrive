@@ -103,12 +103,14 @@ const NodeActionDropdown = ({
   const { mutate: cutNodeMutation, isPending: cutNodePending } = useCutNode({
     onSuccess: () => {
       clearClipboard()
+      setOpenDropdown(false)
     },
   })
 
   const { mutate: copyNodeMutation, isPending: copyNodePending } = useCopyNode({
     onSuccess: () => {
       clearClipboard()
+      setOpenDropdown(false)
     },
   })
 

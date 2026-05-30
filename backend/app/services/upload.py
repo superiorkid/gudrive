@@ -1,4 +1,6 @@
+import asyncio
 import errno
+import logging
 import os
 import shutil
 import uuid
@@ -16,13 +18,15 @@ from app.common.exceptions import (
     NotFoundException,
 )
 from app.core.config import Settings
-from app.lib.generate_unique_filename import generate_unique_filename
+from app.lib.utils import _resolve_unique_name
 from app.models.node import Node, NodeType
 from app.models.upload_session import UploadSession, UploadStatus
 from app.models.user import User
 from app.schemas.upload import InitializeUploadRequest, InitializeUploadResponse
 from app.services.cache import CacheService
 from app.tasks.uploads import generate_file_preview
+
+logger = logging.getLogger(__name__)
 
 
 async def initialize_upload_service(
@@ -33,26 +37,42 @@ async def initialize_upload_service(
     cache: CacheService,
 ) -> InitializeUploadResponse:
     if payload.parent_id:
-        query = select(Node).where(
-            Node.id == payload.parent_id,
-            Node.owner_id == current_user.id,
-            Node.deleted_at.is_(None),
-        )
-        result = await db.execute(query)
-        parent = result.scalar_one_or_none()
+        parent = (
+            await db.execute(
+                select(Node).where(
+                    Node.id == payload.parent_id,
+                    Node.owner_id == current_user.id,
+                    Node.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+
         if not parent:
             raise NotFoundException("Node", str(payload.parent_id))
 
         if parent.type != NodeType.FOLDER:
             raise BadRequestException(
-                "Parent must be a folder", details={"parent_type": parent.type}
+                "Parent must be a folder",
+                details={"parent_type": parent.type},
             )
 
-    resolved_filaname = await generate_unique_filename(
-        db=db,
-        owner_id=current_user.id,
-        parent_id=payload.parent_id,
+    existing_names = set(
+        (
+            await db.execute(
+                select(Node.name).where(
+                    Node.owner_id == current_user.id,
+                    Node.parent_id == payload.parent_id,
+                    Node.deleted_at.is_(None),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    resolved_filename = _resolve_unique_name(
         filename=payload.filename,
+        taken=existing_names,
     )
 
     upload_id = uuid.uuid7()
@@ -65,6 +85,7 @@ async def initialize_upload_service(
     try:
         with open(storage_path, "wb") as f:
             f.truncate(payload.total_size)
+
     except OSError as e:
         error_code = "FILE_ALLOCATION_FAILED"
 
@@ -75,11 +96,14 @@ async def initialize_upload_service(
 
         raise AppException(
             error_code=error_code,
-            message=f"Failed to allocate file: {str(e)}",
+            message=f"Failed to allocate file: {e}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             details={
                 "errno": e.errno,
-                "error_name": errno.errorcode.get(cast(int, e.errno), "UNKNOWN"),
+                "error_name": errno.errorcode.get(
+                    cast(int, e.errno),
+                    "UNKNOWN",
+                ),
                 "path": storage_path,
                 "requested_size": payload.total_size,
             },
@@ -88,7 +112,7 @@ async def initialize_upload_service(
     session = UploadSession(
         id=upload_id,
         owner_id=current_user.id,
-        filename=resolved_filaname,
+        filename=resolved_filename,
         mime_type=payload.mime_type,
         total_size=payload.total_size,
         chunk_size=config.upload_chunk_size,
@@ -97,10 +121,12 @@ async def initialize_upload_service(
         parent_id=payload.parent_id,
         status=UploadStatus.INITIATED,
     )
+
     db.add(session)
 
     try:
         await db.commit()
+
         await cache.set(
             f"upload:{upload_id}",
             {
@@ -112,14 +138,24 @@ async def initialize_upload_service(
             },
             60 * 60 * 24,
         )
+
     except IntegrityError:
         await db.rollback()
-        if os.path.exists(storage_path):
+
+        try:
             os.remove(storage_path)
-        raise AlreadyExistsException("UploadSession", "id", str(upload_id))
+        except FileNotFoundError:
+            pass
+
+        raise AlreadyExistsException(
+            "UploadSession",
+            "id",
+            str(upload_id),
+        )
 
     return InitializeUploadResponse(
-        upload_id=upload_id, chunk_size=config.upload_chunk_size
+        upload_id=upload_id,
+        chunk_size=config.upload_chunk_size,
     )
 
 
@@ -360,19 +396,28 @@ async def finalize_upload_service(
     await db.commit()
     await db.refresh(node)
 
-    await cache.delete(f"upload:{upload_id}")
-    await cache.delete(f"statistics:user={current_user.id}")
-    # invalidate folder listing
-    await cache.flush_pattern(
-        f"nodes:user={current_user.id}:parent={session.parent_id}:*"
-    )
-    # invalidate search cache
-    await cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*")
-    # invalidate parent detail cache (children_count changed)
+    invalidation_tasks = [
+        cache.delete(f"upload:{upload_id}"),
+        cache.delete(f"statistics:user={current_user.id}"),
+        cache.flush_pattern(f"nodes:user={current_user.id}:*keyword=*"),
+    ]
+
     if session.parent_id:
-        await cache.delete(
-            f"node:detail:user={current_user.id}:node={session.parent_id}"
+        invalidation_tasks.extend(
+            [
+                cache.flush_pattern(
+                    f"nodes:user={current_user.id}:parent={session.parent_id}:*"
+                ),
+                cache.delete(
+                    f"node:detail:user={current_user.id}:node={session.parent_id}"
+                ),
+            ]
         )
+
+    results = await asyncio.gather(*invalidation_tasks, return_exceptions=True)
+    for r in results:
+        if isinstance(r, Exception):
+            logger.warning(f"Cache invalidation failed: {r}")
 
     generate_file_preview.delay(str(node.id))
 
